@@ -12,7 +12,7 @@ const rl = @cImport({
 const APP_NAME = "Zigsteroids"; // "All your base are belong to us!"
 
 const TILE_SIZE = 45;
-const GRID_SIZE = Vec2(10, 20); // Grid size
+const GRID_SIZE = Coord{ .x = 10, .y = 20}; // Grid size
 
 const WINDOW_SIZE = Vec2(750, 940); // Window size
 const BOARD_SIZE = Vec2(GRID_SIZE.x * TILE_SIZE, GRID_SIZE.y * TILE_SIZE); // Game area size
@@ -33,12 +33,25 @@ fn Vec2(x: f32, y: f32) rl.Vector2 {
 //========= GAME LOGIC ==================
 //=======================================
 
+const BlockState = enum {
+    EMPTY,  // Empty block of the grid
+    FIGURE, // Block of the current figure
+    GROUND, // Block of the ground
+    REMOVE, // Block of a line to be removed
+};
+
+const Coord = struct {
+    x: usize,
+    y: usize,
+};
+
 const Block = struct {
+    coord: Coord,
     x: f32,
     y: f32,
     width: f32,
     height: f32,
-    filled: bool,
+    state: BlockState,
     color: rl.Color,
 
     fn getRect(self: @This()) rl.Rectangle {
@@ -51,8 +64,7 @@ const Game = struct {
     pause: bool = true,
     score: u32 = 0,
     level: u8 = 0,
-    grid: std.ArrayList(Block) = undefined,
-    field: std.ArrayList(Block) = undefined,
+    grid: [GRID_SIZE.x][GRID_SIZE.y]Block = undefined,
     figures: std.ArrayList([4]Block) = undefined,
     figure: [4]Block = undefined,
     figureNext: [4]Block = undefined,
@@ -79,22 +91,19 @@ fn start() !void {
     game.over = false;
     game.score = 0;
     game.level = 1;
-    // Initialize/clear the game field
-    game.field.clearRetainingCapacity();
     // Initialize the grid
-    game.grid.clearRetainingCapacity();
     // The grid is a 2D array of rectangles, each one representing a tile
     for (0..GRID_SIZE.x) |x| {
         for (0..GRID_SIZE.y) |y| {
-            const block = Block{
+            game.grid[x][y] = Block{
+                .coord = Coord{ .x = x, .y = y },
                 .x = @floatFromInt(x * TILE_SIZE),
                 .y = @floatFromInt(y * TILE_SIZE),
                 .width = TILE_SIZE,
                 .height = TILE_SIZE,
-                .filled = false,
                 .color = rl.DARKGRAY,
+                .state = BlockState.EMPTY,
             };
-            try game.grid.append(block);
         }
     }
     // Choose a random figure and its next
@@ -113,13 +122,33 @@ fn makeFigure() !void {
     game.figureNext = game.figures.items[random.uintLessThan(usize, game.figures.items.len)];
 }
 
+// fn rotateFigure() void {
+//     const center = game.figure[0];
+//     for (&game.figure) |*rect| {
+//         const x = rect.x - center.x;
+//         const y = rect.y - center.y;
+//         rect.x = center.x - y;
+//         rect.y = center.y + x;
+//     }
+// }
+
 fn rotateFigure() void {
     const center = game.figure[0];
     for (&game.figure) |*rect| {
-        const x = rect.x - center.x;
-        const y = rect.y - center.y;
-        rect.x = center.x - y;
-        rect.y = center.y + x;
+        // Rotation involve negative values, but coordinates are unsigned
+        // so we need to convert them to signed integers
+        const tmpX: isize = @intCast(rect.coord.x);
+        const tmpY: isize = @intCast(rect.coord.y);
+        const tmpCX: isize = @intCast(center.coord.x);
+        const tmpCY: isize = @intCast(center.coord.y);
+        // Now the logic
+        const lX = tmpX - tmpCX;
+        const lY = tmpY - tmpCY;
+        const x = tmpCX - lY;
+        const y = tmpCY + lX;
+        // Convert back to unsigned integers
+        rect.coord.x = @abs(x);
+        rect.coord.y = @abs(y);
     }
 }
 
@@ -134,40 +163,72 @@ fn checkBorders(dir: Direction) bool {
     for (&game.figure) |*rect| {
         if (dir == Direction.LEFT) {
             // The figure has reached the left border
-            if (rect.x <= 0) {
+            if (rect.coord.x == 0) {
                 return false;
             }
-            // The figure has reached the field
-            for (game.field.items) |*fieldRect| {
-                if (rect.x - TILE_SIZE == fieldRect.x and rect.y == fieldRect.y) {
-                    return false;
-                }
+            // The figure is blocked by another block
+            if (game.grid[rect.coord.x - 1][rect.coord.y].state == BlockState.GROUND) {
+                return false;
             }
         } else if (dir == Direction.RIGHT) {
             // The figure has reached the right border
-            if (rect.x >= BOARD_SIZE.x - TILE_SIZE) {
+            if (rect.coord.x >= GRID_SIZE.x - 1) {
                 return false;
             }
-            // The figure has reached the field
-            for (game.field.items) |*fieldRect| {
-                if (rect.x + TILE_SIZE == fieldRect.x and rect.y == fieldRect.y) {
-                    return false;
-                }
+            // The figure is blocked by another block
+            if (game.grid[rect.coord.x + 1][rect.coord.y].state == BlockState.GROUND) {
+                return false;
             }
         } else if (dir == Direction.DOWN) {
             // The figure has reached the bottom
-            if (rect.y >= BOARD_SIZE.y - TILE_SIZE) {
+            if (rect.coord.y >= GRID_SIZE.y - 1) {
                 return false;
             }
-            // The figure has reached the field
-            for (game.field.items) |*fieldRect| {
-                if (rect.x == fieldRect.x and rect.y + TILE_SIZE == fieldRect.y) {
-                    return false;
-                }
+            // The figure is blocked by another block (the ground)
+            switch (game.grid[rect.coord.x][rect.coord.y + 1].state) {
+                .GROUND => return false,
+                .REMOVE => return false,
+                else => {},
             }
         }
     }
     return true;
+}
+
+/// Returns the y index or the first full line found from the bottom
+/// or a NoLine error if no full line is found
+fn getNextLine() error{NoLine}!usize {
+    for (0..GRID_SIZE.y) |y| {
+        var full = true;
+        for (0..GRID_SIZE.x) |x| {
+            if (game.grid[x][y].state != BlockState.GROUND) {
+                full = false;
+                break;
+            }
+        }
+        if (full) {
+            return y;
+        }
+    }
+    return error.NoLine;
+}
+
+/// Remove the line at the given index
+fn removeLine(index: usize) void {
+    // Mark blocks as empty
+    for (0..GRID_SIZE.x) |x| {
+        game.grid[x][index].state = BlockState.EMPTY;
+    }
+    // Move down the blocks above the removed line
+    // until they reach a non-empty block
+    for (0..index) |y| {
+        for (0..GRID_SIZE.x) |x| {
+            if (game.grid[x][y].state == BlockState.GROUND) {
+                game.grid[x][y].state = BlockState.EMPTY;
+                game.grid[x][y + 1].state = BlockState.GROUND;
+            }
+        }
+    }
 }
 
 //=======================================
@@ -204,21 +265,21 @@ fn update() !void {
     if (rl.IsKeyPressed(rl.KEY_LEFT)) {
         if (checkBorders(Direction.LEFT)) {
             for (&game.figure) |*rect| {
-                rect.x -= TILE_SIZE;
+                rect.coord.x -= 1;
             }
         }
     }
     if (rl.IsKeyPressed(rl.KEY_RIGHT)) {
         if (checkBorders(Direction.RIGHT)) {
             for (&game.figure) |*rect| {
-                rect.x += TILE_SIZE;
+                rect.coord.x += 1;
             }
         }
     }
     if (rl.IsKeyDown(rl.KEY_DOWN)) {
         if (checkBorders(Direction.DOWN)) {
             for (&game.figure) |*rect| {
-                rect.y += TILE_SIZE;
+                rect.coord.y += 1;
             }
         }
     }
@@ -234,50 +295,29 @@ fn update() !void {
         game.frameCounter = 0;
         if (checkBorders(Direction.DOWN)) {
             for (&game.figure) |*rect| {
-                rect.y += TILE_SIZE;
+                rect.coord.y += 1;
             }
         } else {
             // The figure has reached the bottom
             for (&game.figure) |*block| {
-                // Mark the figure as filled
-                block.filled = true;
-                // Copy the figure to the game field
-                try game.field.append(block.*);
+                block.state = BlockState.GROUND;
+                game.grid[block.coord.x][block.coord.y] = block.*;
             }
             // Choose a new figure
             try makeFigure();
         }
     }
 
-    // Check every row of the field
-    for (0..GRID_SIZE.y) |y| {
-        var count: usize = 0;
-        // Calculate the y position of the current row to check
-        const py = @as(f32, @floatFromInt(y * TILE_SIZE));
-        // Count filled blocks at this y position
-        for (game.field.items) |*block| {
-            if (block.filled and block.y == py) {
-                count += 1;
-            }
-        }
-        // If the row is full, remove it
-        if (count == GRID_SIZE.x) {
-            // Remove the row
-            for (0.., game.field.items) |i, *block| {
-                if (block.y == py) {
-                    _ = game.field.orderedRemove(i);
-                }
-            }
-            // Move down the upper rows
-            for (game.field.items) |*block| {
-                if (block.y < py) {
-                    block.y += TILE_SIZE;
-                }
-            }
-            // Increase the score
-            game.score += 10;
-        }
+    // Remove full lines
+    var score: u32 = 0;
+    while (true) {
+        const result = getNextLine() catch break;
+        removeLine(result);
+        score += 100;
     }
+
+    game.score += score;
+
 }
 
 fn render() !void {
@@ -312,21 +352,35 @@ fn render() !void {
     rl.DrawText(scoreString.ptr, WINDOW_SIZE.x - 150, 40, 20, rl.DARKGRAY);
 
     // Draw grid
-    for (game.grid.items) |block| {
-        rl.DrawRectangleLinesEx(block.getRect(), 1, block.color);
-    }
-
-    // Draw field
-    for (game.field.items) |block| {
-        rl.DrawRectangleRec(block.getRect(), rl.GRAY);
-        rl.DrawRectangleLinesEx(block.getRect(), 1, rl.DARKGRAY);
+    for (0..GRID_SIZE.x) |x| {
+        for (0..GRID_SIZE.y) |y| {
+            const block = &game.grid[x][y];
+            switch (block.state) {
+                .EMPTY => {
+                    rl.DrawRectangleLinesEx(block.getRect(), 1, rl.DARKGRAY);
+                },
+                .GROUND => {
+                    rl.DrawRectangleRec(block.getRect(), rl.GRAY);
+                    rl.DrawRectangleLinesEx(block.getRect(), 1, rl.DARKGRAY);
+                },
+                .REMOVE => {
+                    rl.DrawRectangleRec(block.getRect(), rl.GREEN);
+                },
+                else => {}, // current figure drawn later
+            }
+        }
     }
 
     // Draw current figure
-    for (game.figure) |block| {
+    for (&game.figure) |*block| {
+        // Compute the next figure position, given its coordinates in the grid
+        block.x = @floatFromInt(block.coord.x * TILE_SIZE);
+        block.y = @floatFromInt(block.coord.y * TILE_SIZE);
+        // Draw
         rl.DrawRectangleRec(block.getRect(), block.color);
         rl.DrawRectangleLinesEx(block.getRect(), 1, rl.YELLOW);
     }
+
 }
 
 pub fn main() !void {
@@ -334,12 +388,6 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer std.debug.assert(gpa.deinit() == .ok);
     game.allocator = gpa.allocator();
-
-    game.grid = std.ArrayList(Block).init(game.allocator);
-    defer game.grid.deinit();
-
-    game.field = std.ArrayList(Block).init(game.allocator);
-    defer game.field.deinit();
 
     game.figures = std.ArrayList([4]Block).init(game.allocator);
     defer game.figures.deinit();
@@ -349,12 +397,16 @@ pub fn main() !void {
         var blocks: [4]Block = undefined;
         for (0.., posList) |j, pos| {
             blocks[j] = Block{
+                .coord = Coord{
+                    .x = @intFromFloat(@divTrunc(pos.x + GRID_SIZE.x, 2)),
+                    .y = @intFromFloat(pos.y + 1),
+                },
                 .x = @divTrunc(pos.x + GRID_SIZE.x, 2) * TILE_SIZE,
                 .y = @as(f32, pos.y + 1) * TILE_SIZE,
                 .width = TILE_SIZE,
                 .height = TILE_SIZE,
-                .filled = true,
                 .color = rl.RED,
+                .state = BlockState.FIGURE,
             };
         }
         try game.figures.append(blocks);
