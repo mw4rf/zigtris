@@ -108,9 +108,9 @@ fn makeFigure() !void {
     // Copy the next figure to the current figure
     game.figure = game.figureNext;
     // Choose a new next figure
-    var prng = std.rand.Xoshiro256.init(1229948729847);
+    var prng = std.rand.Xoshiro256.init(@as(u64, @intCast(std.time.milliTimestamp())));
     const random = prng.random();
-    game.figureNext = game.figures.items[random.uintAtMost(usize, game.figures.items.len)];
+    game.figureNext = game.figures.items[random.uintLessThan(usize, game.figures.items.len)];
 }
 
 fn rotateFigure() void {
