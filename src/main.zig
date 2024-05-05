@@ -33,30 +33,44 @@ fn Vec2(x: f32, y: f32) rl.Vector2 {
 //========= GAME LOGIC ==================
 //=======================================
 
+const Block = struct {
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+    filled: bool,
+    color: rl.Color,
+
+    fn getRect(self: @This()) rl.Rectangle {
+        return rl.Rectangle{ .x = self.x, .y = self.y, .width = self.width, .height = self.height };
+    }
+};
+
 const Game = struct {
     over: bool = false,
     pause: bool = true,
     score: u32 = 0,
     level: u8 = 0,
-    grid: std.ArrayList(rl.Rectangle) = undefined,
-    field: std.ArrayList(rl.Rectangle) = undefined,
-    figures: std.ArrayList([4]rl.Rectangle) = undefined,
-    figure: [4]rl.Rectangle = undefined,
-    figureNext: [4]rl.Rectangle = undefined,
+    grid: std.ArrayList(Block) = undefined,
+    field: std.ArrayList(Block) = undefined,
+    figures: std.ArrayList([4]Block) = undefined,
+    figure: [4]Block = undefined,
+    figureNext: [4]Block = undefined,
     frameCounter: u32 = 0,
     speed: u32 = 1,
+    allocator: std.mem.Allocator = undefined,
 };
 var game: Game = Game{};
 
 // Tetromino figures definition
 const FIGURES_POS: [7][4]rl.Vector2 = .{
-    .{Vec2(-1, 0), Vec2(-2, 0), Vec2(0, 0), Vec2(1, 0)},
-    .{Vec2(0, -1), Vec2(-1, -1), Vec2(-1, 0), Vec2(0, 0)},
-    .{Vec2(-1, 0), Vec2(-1, 1), Vec2(0, 0), Vec2(0, -1)},
-    .{Vec2(0, 0), Vec2(-1, 0), Vec2(0, 1), Vec2(-1, -1)},
-    .{Vec2(0, 0), Vec2(0, -1), Vec2(0, 1), Vec2(-1, -1)},
-    .{Vec2(0, 0), Vec2(0, -1), Vec2(0, 1), Vec2(1, -1)},
-    .{Vec2(0, 0), Vec2(0, -1), Vec2(0, 1), Vec2(-1, 0)},
+    .{ Vec2(-1, 0), Vec2(-2, 0), Vec2(0, 0), Vec2(1, 0) },
+    .{ Vec2(0, -1), Vec2(-1, -1), Vec2(-1, 0), Vec2(0, 0) },
+    .{ Vec2(-1, 0), Vec2(-1, 1), Vec2(0, 0), Vec2(0, -1) },
+    .{ Vec2(0, 0), Vec2(-1, 0), Vec2(0, 1), Vec2(-1, -1) },
+    .{ Vec2(0, 0), Vec2(0, -1), Vec2(0, 1), Vec2(-1, -1) },
+    .{ Vec2(0, 0), Vec2(0, -1), Vec2(0, 1), Vec2(1, -1) },
+    .{ Vec2(0, 0), Vec2(0, -1), Vec2(0, 1), Vec2(-1, 0) },
 };
 
 /// Start or restart the game
@@ -72,13 +86,15 @@ fn start() !void {
     // The grid is a 2D array of rectangles, each one representing a tile
     for (0..GRID_SIZE.x) |x| {
         for (0..GRID_SIZE.y) |y| {
-            const rect = rl.Rectangle {
+            const block = Block{
                 .x = @floatFromInt(x * TILE_SIZE),
                 .y = @floatFromInt(y * TILE_SIZE),
                 .width = TILE_SIZE,
-                .height = TILE_SIZE
+                .height = TILE_SIZE,
+                .filled = false,
+                .color = rl.DARKGRAY,
             };
-            try game.grid.append(rect);
+            try game.grid.append(block);
         }
     }
     // Choose a random figure and its next
@@ -97,7 +113,7 @@ fn makeFigure() !void {
     game.figureNext = game.figures.items[random.uintAtMost(usize, game.figures.items.len)];
 }
 
-fn rotateFigure () void {
+fn rotateFigure() void {
     const center = game.figure[0];
     for (&game.figure) |*rect| {
         const x = rect.x - center.x;
@@ -199,7 +215,7 @@ fn update() !void {
             }
         }
     }
-    if (rl.IsKeyPressed(rl.KEY_DOWN)) {
+    if (rl.IsKeyDown(rl.KEY_DOWN)) {
         if (checkBorders(Direction.DOWN)) {
             for (&game.figure) |*rect| {
                 rect.y += TILE_SIZE;
@@ -222,9 +238,11 @@ fn update() !void {
             }
         } else {
             // The figure has reached the bottom
-            // Copy the figure to the game field
-            for (&game.figure) |*rect| {
-                try game.field.append(rect.*);
+            for (&game.figure) |*block| {
+                // Mark the figure as filled
+                block.filled = true;
+                // Copy the figure to the game field
+                try game.field.append(block.*);
             }
             // Choose a new figure
             try makeFigure();
@@ -232,8 +250,34 @@ fn update() !void {
     }
 
     // Check every row of the field
-    // If a row is full, remove it and move the rows above down
-
+    for (0..GRID_SIZE.y) |y| {
+        var count: usize = 0;
+        // Calculate the y position of the current row to check
+        const py = @as(f32, @floatFromInt(y * TILE_SIZE));
+        // Count filled blocks at this y position
+        for (game.field.items) |*block| {
+            if (block.filled and block.y == py) {
+                count += 1;
+            }
+        }
+        // If the row is full, remove it
+        if (count == GRID_SIZE.x) {
+            // Remove the row
+            for (0.., game.field.items) |i, *block| {
+                if (block.y == py) {
+                    _ = game.field.orderedRemove(i);
+                }
+            }
+            // Move down the upper rows
+            for (game.field.items) |*block| {
+                if (block.y < py) {
+                    block.y += TILE_SIZE;
+                }
+            }
+            // Increase the score
+            game.score += 10;
+        }
+    }
 }
 
 fn render() !void {
@@ -268,55 +312,52 @@ fn render() !void {
     rl.DrawText(scoreString.ptr, WINDOW_SIZE.x - 150, 40, 20, rl.DARKGRAY);
 
     // Draw grid
-    for (game.grid.items) |rect| {
-        rl.DrawRectangleLinesEx(rect, 1, rl.DARKGRAY);
+    for (game.grid.items) |block| {
+        rl.DrawRectangleLinesEx(block.getRect(), 1, block.color);
     }
 
     // Draw field
-    for (game.field.items) |rect| {
-        rl.DrawRectangleRec(rect, rl.GRAY);
-        rl.DrawRectangleLinesEx(rect, 1, rl.DARKGRAY);
+    for (game.field.items) |block| {
+        rl.DrawRectangleRec(block.getRect(), rl.GRAY);
+        rl.DrawRectangleLinesEx(block.getRect(), 1, rl.DARKGRAY);
     }
 
     // Draw current figure
-    for (game.figure) |rect| {
-        // TODO: colors
-        rl.DrawRectangleRec(rect, rl.RED);
-        rl.DrawRectangleLinesEx(rect, 1, rl.YELLOW);
+    for (game.figure) |block| {
+        rl.DrawRectangleRec(block.getRect(), block.color);
+        rl.DrawRectangleLinesEx(block.getRect(), 1, rl.YELLOW);
     }
-
 }
-
-
-
 
 pub fn main() !void {
     // Allocate memory for the game
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer std.debug.assert(gpa.deinit() == .ok);
-    const allocator = gpa.allocator();
+    game.allocator = gpa.allocator();
 
-    game.grid = std.ArrayList(rl.Rectangle).init(allocator);
+    game.grid = std.ArrayList(Block).init(game.allocator);
     defer game.grid.deinit();
 
-    game.field = std.ArrayList(rl.Rectangle).init(allocator);
+    game.field = std.ArrayList(Block).init(game.allocator);
     defer game.field.deinit();
 
-    game.figures = std.ArrayList([4]rl.Rectangle).init(allocator);
+    game.figures = std.ArrayList([4]Block).init(game.allocator);
     defer game.figures.deinit();
 
     // Initialize figures
     inline for (FIGURES_POS) |posList| {
-        var rec: [4]rl.Rectangle = undefined;
-        for(0.., posList) |j, pos| {
-            rec[j] = rl.Rectangle {
+        var blocks: [4]Block = undefined;
+        for (0.., posList) |j, pos| {
+            blocks[j] = Block{
                 .x = @divTrunc(pos.x + GRID_SIZE.x, 2) * TILE_SIZE,
                 .y = @as(f32, pos.y + 1) * TILE_SIZE,
                 .width = TILE_SIZE,
                 .height = TILE_SIZE,
+                .filled = true,
+                .color = rl.RED,
             };
         }
-        try game.figures.append(rec);
+        try game.figures.append(blocks);
     }
 
     // Initialize raylib
