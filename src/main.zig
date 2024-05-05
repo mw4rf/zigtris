@@ -4,6 +4,8 @@ const rl = @cImport({
     @cInclude("raymath.h");
 });
 
+// NOTE: see https://github.com/StanislavPetrovV/Python-Tetris/blob/master/main.py
+
 //=======================================
 //========= CONSTANTS  ==================
 //=======================================
@@ -22,6 +24,7 @@ const FPS = 60; // Frames per second
 //========= UTILS   =====================
 //=======================================
 
+/// Returns a Raylib.Vector2 object from two f32 x,y values
 fn Vec2(x: f32, y: f32) rl.Vector2 {
     return rl.Vector2{ .x = x, .y = y };
 }
@@ -36,6 +39,7 @@ const Game = struct {
     score: u32 = 0,
     level: u8 = 0,
     grid: std.ArrayList(rl.Rectangle) = undefined,
+    field: std.ArrayList(rl.Rectangle) = undefined,
     figures: std.ArrayList([4]rl.Rectangle) = undefined,
     figure: [4]rl.Rectangle = undefined,
     figureNext: [4]rl.Rectangle = undefined,
@@ -55,12 +59,14 @@ const FIGURES_POS: [7][4]rl.Vector2 = .{
     .{Vec2(0, 0), Vec2(0, -1), Vec2(0, 1), Vec2(-1, 0)},
 };
 
-
+/// Start or restart the game
 fn start() !void {
     // Set game going
     game.over = false;
     game.score = 0;
-    game.level = 0;
+    game.level = 1;
+    // Initialize/clear the game field
+    game.field.clearRetainingCapacity();
     // Initialize the grid
     game.grid.clearRetainingCapacity();
     // The grid is a 2D array of rectangles, each one representing a tile
@@ -76,14 +82,12 @@ fn start() !void {
         }
     }
     // Choose a random figure and its next
-    // var prng = std.rand.Xoshiro256.init(1229948729847);
-    // const random = prng.random();
-    // game.figure = game.figures.items[random.uintAtMost(usize, game.figures.items.len)];
-    // game.figureNext = game.figures.items[random.uintAtMost(usize, game.figures.items.len)];
+    // Call it twice to initialize both current and next figures
     try makeFigure();
     try makeFigure();
 }
 
+/// The next figure becomes the current figure and a new next figure is randomly chosen
 fn makeFigure() !void {
     // Copy the next figure to the current figure
     game.figure = game.figureNext;
@@ -106,17 +110,44 @@ fn rotateFigure () void {
 const Direction = enum {
     LEFT,
     RIGHT,
+    DOWN,
 };
 
+/// Prevent the figure from going out of the board
 fn checkBorders(dir: Direction) bool {
     for (&game.figure) |*rect| {
         if (dir == Direction.LEFT) {
+            // The figure has reached the left border
             if (rect.x <= 0) {
                 return false;
             }
+            // The figure has reached the field
+            for (game.field.items) |*fieldRect| {
+                if (rect.x - TILE_SIZE == fieldRect.x and rect.y == fieldRect.y) {
+                    return false;
+                }
+            }
         } else if (dir == Direction.RIGHT) {
+            // The figure has reached the right border
             if (rect.x >= BOARD_SIZE.x - TILE_SIZE) {
                 return false;
+            }
+            // The figure has reached the field
+            for (game.field.items) |*fieldRect| {
+                if (rect.x + TILE_SIZE == fieldRect.x and rect.y == fieldRect.y) {
+                    return false;
+                }
+            }
+        } else if (dir == Direction.DOWN) {
+            // The figure has reached the bottom
+            if (rect.y >= BOARD_SIZE.y - TILE_SIZE) {
+                return false;
+            }
+            // The figure has reached the field
+            for (game.field.items) |*fieldRect| {
+                if (rect.x == fieldRect.x and rect.y + TILE_SIZE == fieldRect.y) {
+                    return false;
+                }
             }
         }
     }
@@ -169,8 +200,10 @@ fn update() !void {
         }
     }
     if (rl.IsKeyPressed(rl.KEY_DOWN)) {
-        for (&game.figure) |*rect| {
-            rect.y += TILE_SIZE;
+        if (checkBorders(Direction.DOWN)) {
+            for (&game.figure) |*rect| {
+                rect.y += TILE_SIZE;
+            }
         }
     }
 
@@ -183,11 +216,23 @@ fn update() !void {
     game.frameCounter += game.speed;
     if (game.frameCounter >= FPS) {
         game.frameCounter = 0;
-        for (&game.figure) |*rect| {
-            rect.y += TILE_SIZE;
+        if (checkBorders(Direction.DOWN)) {
+            for (&game.figure) |*rect| {
+                rect.y += TILE_SIZE;
+            }
+        } else {
+            // The figure has reached the bottom
+            // Copy the figure to the game field
+            for (&game.figure) |*rect| {
+                try game.field.append(rect.*);
+            }
+            // Choose a new figure
+            try makeFigure();
         }
     }
 
+    // Check every row of the field
+    // If a row is full, remove it and move the rows above down
 
 }
 
@@ -227,6 +272,12 @@ fn render() !void {
         rl.DrawRectangleLinesEx(rect, 1, rl.DARKGRAY);
     }
 
+    // Draw field
+    for (game.field.items) |rect| {
+        rl.DrawRectangleRec(rect, rl.GRAY);
+        rl.DrawRectangleLinesEx(rect, 1, rl.DARKGRAY);
+    }
+
     // Draw current figure
     for (game.figure) |rect| {
         // TODO: colors
@@ -247,6 +298,9 @@ pub fn main() !void {
 
     game.grid = std.ArrayList(rl.Rectangle).init(allocator);
     defer game.grid.deinit();
+
+    game.field = std.ArrayList(rl.Rectangle).init(allocator);
+    defer game.field.deinit();
 
     game.figures = std.ArrayList([4]rl.Rectangle).init(allocator);
     defer game.figures.deinit();
