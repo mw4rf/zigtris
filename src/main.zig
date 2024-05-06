@@ -25,6 +25,21 @@ const SCORE_INCREASE_PER_LINE = 100; // Score increase per line
 const SCORE_NEXT_LEVEL :u32 = 1000; // Score to reach the next level
 const LEVEL_SPEED_MULTIPLIER = 0.8; // Speed multiplier for each level
 
+const FIGURE_COLORS: [12]rl.Color = .{
+    rl.RED,
+    rl.ORANGE,
+    rl.GOLD,
+    rl.LIME,
+    rl.BLUE,
+    rl.SKYBLUE,
+    rl.VIOLET,
+    rl.PURPLE,
+    rl.MAGENTA,
+    rl.MAROON,
+    rl.PINK,
+    rl.BROWN,
+};
+
 //=======================================
 //========= UTILS   =====================
 //=======================================
@@ -126,6 +141,11 @@ fn makeFigure() !void {
     var prng = std.rand.Xoshiro256.init(@as(u64, @intCast(std.time.milliTimestamp())));
     const random = prng.random();
     game.figureNext = game.figures.items[random.uintLessThan(usize, game.figures.items.len)];
+    // Set the new figure color
+    const color = FIGURE_COLORS[random.uintLessThan(usize, FIGURE_COLORS.len)];
+    for (&game.figureNext) |*block| {
+        block.color = color;
+    }
 }
 
 fn rotateFigure() void {
@@ -402,7 +422,7 @@ fn render() !void {
         block.y = @floatFromInt(block.coord.y * TILE_SIZE);
         // Draw
         rl.DrawRectangleRec(block.getRect(), block.color);
-        rl.DrawRectangleLinesEx(block.getRect(), 1, rl.YELLOW);
+        rl.DrawRectangleLinesEx(block.getRect(), 1, rl.RAYWHITE);
     }
 
     // Draw next figure
@@ -415,8 +435,8 @@ fn render() !void {
         block.x += 350.0;
         block.y += 200.0;
         // Draw
-        rl.DrawRectangleRec(block.getRect(), rl.GRAY);
-        rl.DrawRectangleLinesEx(block.getRect(), 1, rl.DARKGRAY);
+        rl.DrawRectangleRec(block.getRect(), block.color);
+        rl.DrawRectangleLinesEx(block.getRect(), 1, rl.RAYWHITE);
     }
 
 }
