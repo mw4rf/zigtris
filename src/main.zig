@@ -381,6 +381,13 @@ fn update() !void {
         game.speed = BASE_SPEED * @as(f32, @floatFromInt(game.level)) * LEVEL_SPEED_MULTIPLIER;
     }
 
+    // Game over logic
+    for (0..GRID_SIZE.x) |x| {
+        if (game.grid[x][0].state == BlockState.GROUND) {
+            game.over = true;
+            break;
+        }
+    }
 }
 
 fn render() !void {
