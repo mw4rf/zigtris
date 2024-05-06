@@ -7,8 +7,8 @@ const rl = @cImport({
 // TODO FIX: sometimes the last empty cells are not free and the figure is stopped before reaching the bottom
 // TODO FIX: weird rotation behavior on the left border for some figures
 // TODO: improve display of score and level on the sidebar
+// TODO: balance difficulty (speed increase should be more linear)
 // TODO: save high score
-// TODO: Korobeiniki !! :)
 
 //=======================================
 //========= CONSTANTS  ==================
@@ -391,12 +391,10 @@ fn update() !void {
 }
 
 fn render() !void {
-    // Top left: app name
-    rl.DrawText(APP_NAME, 10, 10, 20, rl.DARKGRAY);
 
     // Data strings
     const allocator = std.heap.page_allocator;
-    const scoreString = try std.fmt.allocPrint(allocator, "Score:\n\n {d}", .{game.score});
+    const scoreString = try std.fmt.allocPrint(allocator, "{d}", .{game.score});
     const levelString = try std.fmt.allocPrint(allocator, "Level: {d}", .{game.level});
     defer allocator.free(scoreString);
     defer allocator.free(levelString);
@@ -418,9 +416,29 @@ fn render() !void {
         return;
     }
 
-    // Level and score
-    rl.DrawText(levelString.ptr, WINDOW_SIZE.x - 220, 10, 30, rl.DARKGRAY);
-    rl.DrawText(scoreString.ptr, WINDOW_SIZE.x - 220, 50, 30, rl.DARKGRAY);
+    // Sidebar
+    const LM = WINDOW_SIZE.x - 220;
+    const RM = WINDOW_SIZE.x - 20;
+
+    rl.DrawText(APP_NAME, LM-10, 10, 60, rl.DARKGRAY);
+
+    rl.DrawText("Score", LM-10, 100, 40, rl.DARKGRAY);
+    rl.DrawText(scoreString.ptr, LM-10, 150, 40, rl.DARKGRAY);
+    rl.DrawText(levelString.ptr, LM-10, 200, 40, rl.DARKGRAY);
+
+    // Draw next figure
+    rl.DrawText("Next figure", LM-10, WINDOW_SIZE.y - 260, 30, rl.DARKGRAY);
+    rl.DrawRectangleLines(LM-10, RM-10, 200, 200, rl.DARKGRAY);
+    for (&game.figureNext) |*block| {
+        block.x = @floatFromInt(block.coord.x * TILE_SIZE);
+        block.y = @floatFromInt(block.coord.y * TILE_SIZE);
+        // Add offset
+        block.x += 360;
+        block.y += WINDOW_SIZE.y - 200.0;
+        // Draw
+        rl.DrawRectangleRec(block.getRect(), block.color);
+        rl.DrawRectangleLinesEx(block.getRect(), 1, rl.RAYWHITE);
+    }
 
     // Draw grid
     for (0..GRID_SIZE.x) |x| {
@@ -452,19 +470,6 @@ fn render() !void {
         rl.DrawRectangleLinesEx(block.getRect(), 1, rl.RAYWHITE);
     }
 
-    // Draw next figure
-    rl.DrawText("Next figure:", WINDOW_SIZE.x - 220, 150, 30, rl.DARKGRAY);
-    for (&game.figureNext) |*block| {
-        // Compute the next figure position, given its coordinates in the grid
-        block.x = @floatFromInt(block.coord.x * TILE_SIZE);
-        block.y = @floatFromInt(block.coord.y * TILE_SIZE);
-        // Add offset
-        block.x += 350.0;
-        block.y += 200.0;
-        // Draw
-        rl.DrawRectangleRec(block.getRect(), block.color);
-        rl.DrawRectangleLinesEx(block.getRect(), 1, rl.RAYWHITE);
-    }
 
 }
 
