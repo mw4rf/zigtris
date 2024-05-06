@@ -21,9 +21,10 @@ const WINDOW_POSITION = Vec2(100, 100); // Window position
 const FPS = 60; // Frames per second
 
 const BASE_SPEED = 1.0; // Speed of the game
-const SCORE_INCREASE_PER_LINE = 100; // Score increase per line
+const SCORE_INCREASE_PER_LINE = 80; // Score increase per line
 const SCORE_NEXT_LEVEL :u32 = 1000; // Score to reach the next level
 const LEVEL_SPEED_MULTIPLIER = 0.8; // Speed multiplier for each level
+const LEVEL_SCORE_MULTIPLIER = 1.2; // Score multiplier for each level
 
 const FIGURE_COLORS: [12]rl.Color = .{
     rl.RED,
@@ -350,7 +351,8 @@ fn update() !void {
     while (true) {
         const result = getNextLine() catch break;
         removeLine(result);
-        score += SCORE_INCREASE_PER_LINE;
+        const roundedScore = @round(SCORE_INCREASE_PER_LINE * LEVEL_SCORE_MULTIPLIER * @as(f32, @floatFromInt(game.level)));
+        score += @as(u32, @intFromFloat(roundedScore));
     }
 
     game.score += score;
