@@ -15,7 +15,7 @@ const TILE_SIZE = 45;
 const GRID_SIZE = Coord{ .x = 10, .y = 20}; // Grid size
 
 const WINDOW_SIZE = Vec2(750, 940); // Window size
-const BOARD_SIZE = Vec2(GRID_SIZE.x * TILE_SIZE, GRID_SIZE.y * TILE_SIZE); // Game area size
+const OFFSET = Vec2(20, 20); // Offset from the window border
 
 const WINDOW_POSITION = Vec2(100, 100); // Window position
 const FPS = 60; // Frames per second
@@ -55,7 +55,7 @@ const Block = struct {
     color: rl.Color,
 
     fn getRect(self: @This()) rl.Rectangle {
-        return rl.Rectangle{ .x = self.x, .y = self.y, .width = self.width, .height = self.height };
+        return rl.Rectangle{ .x = self.x + OFFSET.x, .y = self.y + OFFSET.y, .width = self.width, .height = self.height };
     }
 };
 
