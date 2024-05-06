@@ -4,12 +4,16 @@ const rl = @cImport({
     @cInclude("raymath.h");
 });
 
-// NOTE: see https://github.com/StanislavPetrovV/Python-Tetris/blob/master/main.py
+// TODO FIX: sometimes the last empty cells are not free and the figure is stopped before reaching the bottom
+// TODO FIX: weird rotation behavior on the left border for some figures
+// TODO: improve display of score and level on the sidebar
+// TODO: save high score
+// TODO: Korobeiniki !! :)
 
 //=======================================
 //========= CONSTANTS  ==================
 //=======================================
-const APP_NAME = "Zigsteroids"; // "All your base are belong to us!"
+const APP_NAME = "ZigTris"; // "All your base are belong to us!"
 
 const TILE_SIZE = 45;
 const GRID_SIZE = Coord{ .x = 10, .y = 20}; // Grid size
@@ -355,6 +359,7 @@ fn update() !void {
         score += @as(u32, @intFromFloat(roundedScore));
     }
 
+    // Update the score
     game.score += score;
 
     // Increase the level
