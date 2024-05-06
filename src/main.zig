@@ -326,7 +326,7 @@ fn render() !void {
 
     // Data strings
     const allocator = std.heap.page_allocator;
-    const scoreString = try std.fmt.allocPrint(allocator, "Score: {d}", .{game.score});
+    const scoreString = try std.fmt.allocPrint(allocator, "Score:\n\n {d}", .{game.score});
     const levelString = try std.fmt.allocPrint(allocator, "Level: {d}", .{game.level});
     defer allocator.free(scoreString);
     defer allocator.free(levelString);
@@ -348,8 +348,9 @@ fn render() !void {
         return;
     }
 
+
     // Top right: score
-    rl.DrawText(scoreString.ptr, WINDOW_SIZE.x - 150, 40, 20, rl.DARKGRAY);
+    rl.DrawText(scoreString.ptr, WINDOW_SIZE.x - 220, 40, 30, rl.DARKGRAY);
 
     // Draw grid
     for (0..GRID_SIZE.x) |x| {
@@ -379,6 +380,20 @@ fn render() !void {
         // Draw
         rl.DrawRectangleRec(block.getRect(), block.color);
         rl.DrawRectangleLinesEx(block.getRect(), 1, rl.YELLOW);
+    }
+
+    // Draw next figure
+    rl.DrawText("Next figure:", WINDOW_SIZE.x - 220, 150, 30, rl.DARKGRAY);
+    for (&game.figureNext) |*block| {
+        // Compute the next figure position, given its coordinates in the grid
+        block.x = @floatFromInt(block.coord.x * TILE_SIZE);
+        block.y = @floatFromInt(block.coord.y * TILE_SIZE);
+        // Add offset
+        block.x += 350.0;
+        block.y += 200.0;
+        // Draw
+        rl.DrawRectangleRec(block.getRect(), rl.GRAY);
+        rl.DrawRectangleLinesEx(block.getRect(), 1, rl.DARKGRAY);
     }
 
 }
