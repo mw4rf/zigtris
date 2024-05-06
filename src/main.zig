@@ -85,6 +85,8 @@ const Block = struct {
 };
 
 const Game = struct {
+    sound: bool = true,
+    music: rl.Music = undefined,
     over: bool = false,
     pause: bool = true,
     score: u32 = 0,
@@ -117,6 +119,7 @@ fn start() !void {
     game.score = 0;
     game.level = 1;
     game.speed = BASE_SPEED;
+
     // Initialize the grid
     // The grid is a 2D array of rectangles, each one representing a tile
     for (0..GRID_SIZE.x) |x| {
@@ -303,6 +306,16 @@ fn update() !void {
         }
     }
 
+    // Music
+    if (rl.IsKeyPressed(rl.KEY_S)) {
+        game.sound = !game.sound;
+        if (!game.sound) {
+            rl.PauseMusicStream(game.music);
+        } else {
+            rl.ResumeMusicStream(game.music);
+        }
+    }
+
     // Move the figure
     if (rl.IsKeyPressed(rl.KEY_LEFT)) {
         if (checkBorders(Direction.LEFT)) {
@@ -477,6 +490,13 @@ pub fn main() !void {
         try game.figures.append(blocks);
     }
 
+    // Initialize music
+    rl.InitAudioDevice();
+    defer rl.CloseAudioDevice();
+    game.music = rl.LoadMusicStream("sound/korobeiniki.wav");
+    rl.PlayMusicStream(game.music);
+    defer rl.UnloadMusicStream(game.music);
+
     // Initialize raylib
     rl.InitWindow(WINDOW_SIZE.x, WINDOW_SIZE.y, APP_NAME);
     defer rl.CloseWindow();
@@ -487,6 +507,8 @@ pub fn main() !void {
 
     // Raylib main loop
     while (!rl.WindowShouldClose()) {
+        rl.UpdateMusicStream(game.music);
+
         rl.BeginDrawing();
         defer rl.EndDrawing();
 
