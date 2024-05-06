@@ -352,9 +352,9 @@ fn render() !void {
         return;
     }
 
-
-    // Top right: score
-    rl.DrawText(scoreString.ptr, WINDOW_SIZE.x - 220, 40, 30, rl.DARKGRAY);
+    // Level and score
+    rl.DrawText(levelString.ptr, WINDOW_SIZE.x - 220, 10, 30, rl.DARKGRAY);
+    rl.DrawText(scoreString.ptr, WINDOW_SIZE.x - 220, 50, 30, rl.DARKGRAY);
 
     // Draw grid
     for (0..GRID_SIZE.x) |x| {
