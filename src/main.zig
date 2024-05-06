@@ -129,10 +129,18 @@ fn makeFigure() !void {
 }
 
 fn rotateFigure() void {
-    //TODO: protect rotation from going out of the grid (crash array index out of bounds)
+    // We need a small hack here to prevent the rotation from going out of the grid
+    // because the grid is a 2D array and we can't have indexes out of bounds
 
+    // Copy the figure to a temporary array
+    var tmpFigure: [4]Block = undefined;
+    for (0..4) |i| {
+        tmpFigure[i] = game.figure[i];
+    }
+
+    // Rotate the temporary figure
     const center = game.figure[0];
-    for (&game.figure) |*rect| {
+    for (&tmpFigure) |*rect| {
         // Rotation involve negative values, but coordinates are unsigned
         // so we need to convert them to signed integers
         const tmpX: isize = @intCast(rect.coord.x);
@@ -148,6 +156,17 @@ fn rotateFigure() void {
         rect.coord.x = @abs(x);
         rect.coord.y = @abs(y);
     }
+
+    // Check if the temporary figure is inside the grid
+    // If the rotation is illegal, return before applying it to the current figure
+    for (tmpFigure) |rect| {
+        if (rect.coord.x >= GRID_SIZE.x or rect.coord.y >= GRID_SIZE.y) {
+            return;
+        }
+    }
+
+    // Copy the temporary figure back to the current figure
+    game.figure = tmpFigure;
 }
 
 const Direction = enum {
