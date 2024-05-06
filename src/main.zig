@@ -20,6 +20,11 @@ const OFFSET = Vec2(20, 20); // Offset from the window border
 const WINDOW_POSITION = Vec2(100, 100); // Window position
 const FPS = 60; // Frames per second
 
+const BASE_SPEED = 1.0; // Speed of the game
+const SCORE_INCREASE_PER_LINE = 100; // Score increase per line
+const SCORE_NEXT_LEVEL :u32 = 1000; // Score to reach the next level
+const LEVEL_SPEED_MULTIPLIER = 0.8; // Speed multiplier for each level
+
 //=======================================
 //========= UTILS   =====================
 //=======================================
@@ -68,8 +73,8 @@ const Game = struct {
     figures: std.ArrayList([4]Block) = undefined,
     figure: [4]Block = undefined,
     figureNext: [4]Block = undefined,
-    frameCounter: u32 = 0,
-    speed: u32 = 1,
+    frameCounter: f32 = 0,
+    speed: f32 = BASE_SPEED,
     allocator: std.mem.Allocator = undefined,
 };
 var game: Game = Game{};
@@ -91,6 +96,7 @@ fn start() !void {
     game.over = false;
     game.score = 0;
     game.level = 1;
+    game.speed = BASE_SPEED;
     // Initialize the grid
     // The grid is a 2D array of rectangles, each one representing a tile
     for (0..GRID_SIZE.x) |x| {
@@ -122,17 +128,9 @@ fn makeFigure() !void {
     game.figureNext = game.figures.items[random.uintLessThan(usize, game.figures.items.len)];
 }
 
-// fn rotateFigure() void {
-//     const center = game.figure[0];
-//     for (&game.figure) |*rect| {
-//         const x = rect.x - center.x;
-//         const y = rect.y - center.y;
-//         rect.x = center.x - y;
-//         rect.y = center.y + x;
-//     }
-// }
-
 fn rotateFigure() void {
+    //TODO: protect rotation from going out of the grid (crash array index out of bounds)
+
     const center = game.figure[0];
     for (&game.figure) |*rect| {
         // Rotation involve negative values, but coordinates are unsigned
@@ -313,10 +311,16 @@ fn update() !void {
     while (true) {
         const result = getNextLine() catch break;
         removeLine(result);
-        score += 100;
+        score += SCORE_INCREASE_PER_LINE;
     }
 
     game.score += score;
+
+    // Increase the level
+    if (game.score >= SCORE_NEXT_LEVEL * game.level) {
+        game.level += 1;
+        game.speed = BASE_SPEED * @as(f32, @floatFromInt(game.level)) * LEVEL_SPEED_MULTIPLIER;
+    }
 
 }
 
