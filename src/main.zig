@@ -101,15 +101,6 @@ const Game = struct {
 var game: Game = Game{};
 
 // Tetromino figures definition
-// const FIGURES_POS: [7][4]rl.Vector2 = .{
-//     .{ Vec2(-1, 0), Vec2(-2, 0), Vec2(0, 0), Vec2(1, 0) },      // I (3 blocks line)
-//     .{ Vec2(0, -1), Vec2(-1, -1), Vec2(-1, 0), Vec2(0, 0) },    // S
-//     .{ Vec2(-1, 0), Vec2(-1, 1), Vec2(0, 0), Vec2(0, -1) },     // Z
-//     .{ Vec2(0, 0), Vec2(-1, 0), Vec2(0, 1), Vec2(-1, -1) },     // T
-//     .{ Vec2(0, 0), Vec2(0, -1), Vec2(0, 1), Vec2(-1, -1) },     // L
-//     .{ Vec2(0, 0), Vec2(0, -1), Vec2(0, 1), Vec2(1, -1) },      // L inverted
-//     .{ Vec2(0, 0), Vec2(0, -1), Vec2(0, 1), Vec2(-1, 0) },      // Square
-// };
 const FIGURES_POS: [7][4]Coord = .{
     .{ Coord{.x = 3, .y = 5}, Coord{.x = 2, .y = 5}, Coord{.x = 4, .y = 5}, Coord{.x = 5, .y = 5} }, // I-Tetromino
     .{ Coord{.x = 3, .y = 5}, Coord{.x = 2, .y = 4}, Coord{.x = 2, .y = 5}, Coord{.x = 3, .y = 4} }, // S-Tetromino
