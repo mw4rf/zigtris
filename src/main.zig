@@ -62,7 +62,6 @@ const BlockState = enum {
     EMPTY,  // Empty block of the grid
     FIGURE, // Block of the current figure
     GROUND, // Block of the ground
-    REMOVE, // Block of a line to be removed
 };
 
 const Coord = struct {
@@ -233,7 +232,6 @@ fn checkBorders(dir: Direction) bool {
             // The figure is blocked by another block (the ground)
             switch (game.grid[rect.coord.x][rect.coord.y + 1].state) {
                 .GROUND => return false,
-                .REMOVE => return false,
                 else => {},
             }
         }
@@ -267,12 +265,10 @@ fn removeLine(index: usize) void {
     }
     // Move down the blocks above the removed line
     // until they reach a non-empty block
-    for (0..index) |y| {
+    var y = index;
+    while (y > 0) : (y -= 1) {
         for (0..GRID_SIZE.x) |x| {
-            if (game.grid[x][y].state == BlockState.GROUND) {
-                game.grid[x][y].state = BlockState.EMPTY;
-                game.grid[x][y + 1].state = BlockState.GROUND;
-            }
+            game.grid[x][y].state = game.grid[x][y - 1].state;
         }
     }
 }
@@ -462,9 +458,6 @@ fn render() !void {
                 .GROUND => {
                     rl.DrawRectangleRec(block.getRect(), rl.GRAY);
                     rl.DrawRectangleLinesEx(block.getRect(), 1, rl.DARKGRAY);
-                },
-                .REMOVE => {
-                    rl.DrawRectangleRec(block.getRect(), rl.GREEN);
                 },
                 else => {}, // current figure drawn later
             }
