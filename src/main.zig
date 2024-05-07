@@ -95,6 +95,7 @@ const Game = struct {
     figures: std.ArrayList([4]Block) = undefined,
     figure: [4]Block = undefined,
     figureNext: [4]Block = undefined,
+    figureHadLanded: bool = false,
     frameCounter: f32 = 0,
     speed: f32 = BASE_SPEED,
     allocator: std.mem.Allocator = undefined,
@@ -316,6 +317,41 @@ fn update() !void {
         }
     }
 
+    // A figure has landed
+    if (game.figureHadLanded) {
+        // Reset the flag
+        game.figureHadLanded = false;
+
+        // Remove full lines
+        var score: u32 = 0;
+        while (true) {
+            const result = getNextLine() catch break;
+            removeLine(result);
+            const roundedScore = @round(SCORE_INCREASE_PER_LINE * LEVEL_SCORE_MULTIPLIER * @as(f32, @floatFromInt(game.level)));
+            score += @as(u32, @intFromFloat(roundedScore));
+        }
+
+        // Update the score
+        game.score += score;
+
+        // Increase the level
+        if (game.score >= SCORE_NEXT_LEVEL * game.level) {
+            game.level += 1;
+            game.speed = BASE_SPEED * @as(f32, @floatFromInt(game.level)) * LEVEL_SPEED_MULTIPLIER;
+        }
+
+        // Game over logic
+        for (0..GRID_SIZE.x) |x| {
+            if (game.grid[x][0].state == BlockState.GROUND) {
+                game.over = true;
+                return;
+            }
+        }
+
+        // Make a new figure
+        try makeFigure();
+    }
+
     // Move the figure
     if (rl.IsKeyPressed(rl.KEY_LEFT)) {
         if (checkBorders(Direction.LEFT)) {
@@ -358,36 +394,11 @@ fn update() !void {
                 block.state = BlockState.GROUND;
                 game.grid[block.coord.x][block.coord.y] = block.*;
             }
-            // Choose a new figure
-            try makeFigure();
+            game.figureHadLanded = true;
+            return; // loop again and call render() before making a new figure
         }
     }
 
-    // Remove full lines
-    var score: u32 = 0;
-    while (true) {
-        const result = getNextLine() catch break;
-        removeLine(result);
-        const roundedScore = @round(SCORE_INCREASE_PER_LINE * LEVEL_SCORE_MULTIPLIER * @as(f32, @floatFromInt(game.level)));
-        score += @as(u32, @intFromFloat(roundedScore));
-    }
-
-    // Update the score
-    game.score += score;
-
-    // Increase the level
-    if (game.score >= SCORE_NEXT_LEVEL * game.level) {
-        game.level += 1;
-        game.speed = BASE_SPEED * @as(f32, @floatFromInt(game.level)) * LEVEL_SPEED_MULTIPLIER;
-    }
-
-    // Game over logic
-    for (0..GRID_SIZE.x) |x| {
-        if (game.grid[x][0].state == BlockState.GROUND) {
-            game.over = true;
-            break;
-        }
-    }
 }
 
 fn render() !void {
