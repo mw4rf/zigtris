@@ -170,26 +170,19 @@ fn rotateFigure() void {
     for (&tmpFigure) |*rect| {
         // Rotation involve negative values, but coordinates are unsigned
         // so we need to convert them to signed integers
-        const tmpX: isize = @intCast(rect.coord.x);
-        const tmpY: isize = @intCast(rect.coord.y);
-        const tmpCX: isize = @intCast(center.coord.x);
-        const tmpCY: isize = @intCast(center.coord.y);
-        // Now the logic
-        const lX = tmpX - tmpCX;
-        const lY = tmpY - tmpCY;
-        const x = tmpCX - lY;
-        const y = tmpCY + lX;
-        // Convert back to unsigned integers
-        rect.coord.x = @abs(x);
-        rect.coord.y = @abs(y);
-    }
 
-    // Check if the temporary figure is inside the grid
-    // If the rotation is illegal, return before applying it to the current figure
-    for (tmpFigure) |rect| {
-        if (rect.coord.x >= GRID_SIZE.x or rect.coord.y >= GRID_SIZE.y) {
-            return;
+        // Compute local coordinates relative to the center
+        const lX: isize = @as(isize, @intCast(rect.coord.x)) - @as(isize, @intCast(center.coord.x));
+        const lY: isize = @as(isize, @intCast(rect.coord.y)) - @as(isize, @intCast(center.coord.y));
+        // Perform rotation: (x, y) -> (-y, x)
+        const newX: isize = -lY + @as(isize, @intCast(center.coord.x));
+        const newY: isize = lX + @as(isize, @intCast(center.coord.y));
+        // Ensure new coordinates are within grid bounds
+        if (newX < 0 or newX >= @as(isize, @intCast(GRID_SIZE.x)) or newY < 0 or newY >= @as(isize, @intCast(GRID_SIZE.y))) {
+            return; // Rotation would move part of the figure out of bounds, do not apply
         }
+        rect.coord.x = @as(usize, @intCast(newX));
+        rect.coord.y = @as(usize, @intCast(newY));
     }
 
     // Copy the temporary figure back to the current figure
