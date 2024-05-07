@@ -484,7 +484,7 @@ fn render() !void {
 
     // Draw next figure
     rl.DrawText("Next figure", LM-10, WINDOW_SIZE.y - 260, 30, rl.DARKGRAY);
-    rl.DrawRectangleLines(LM-10, RM-10, 200, 200, rl.DARKGRAY);
+    rl.DrawRectangleLines(LM-20, RM-10, 200, 200, rl.DARKGRAY);
     for (&game.figureNext) |*block| {
         block.x = @floatFromInt(block.coord.x * TILE_SIZE);
         block.y = @floatFromInt(block.coord.y * TILE_SIZE);
