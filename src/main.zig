@@ -4,7 +4,7 @@ const rl = @cImport({
     @cInclude("raymath.h");
 });
 
-// TODO FIX: weird rotation behavior on the left border for some figures
+// TODO FIX: weird rotation behavior on the left border for some figures (S -> square)
 // TODO: improve display of score and level on the sidebar
 // TODO: balance difficulty (speed increase should be more linear)
 // TODO: save high score
@@ -26,8 +26,8 @@ const FPS = 60; // Frames per second
 const BASE_SPEED = 1.0; // Speed of the game
 const SCORE_INCREASE_PER_LINE = 80; // Score increase per line
 const SCORE_NEXT_LEVEL :u32 = 1000; // Score to reach the next level
-const LEVEL_SPEED_MULTIPLIER = 0.8; // Speed multiplier for each level
-const LEVEL_SCORE_MULTIPLIER = 1.2; // Score multiplier for each level
+const LEVEL_SPEED_MULTIPLIER = 0.3; // Speed multiplier for each level
+const LEVEL_SCORE_MULTIPLIER = 1.1; // Score multiplier for each level
 
 const FIGURE_COLORS: [12]rl.Color = .{
     rl.RED,
@@ -324,15 +324,17 @@ fn update() !void {
     if (game.figureHadLanded) {
 
         // Remove full lines
+        var nLines: u8 = 0;
         var score: u32 = 0;
         while (true) {
             const result = getNextLine() catch break;
             removeLine(result);
-            const roundedScore = @round(SCORE_INCREASE_PER_LINE * LEVEL_SCORE_MULTIPLIER * @as(f32, @floatFromInt(game.level)));
-            score += @as(u32, @intFromFloat(roundedScore));
+            nLines += 1;
         }
 
         // Update the score
+        const roundedScore = @round(SCORE_INCREASE_PER_LINE * @as(f32, @floatFromInt(nLines)) * LEVEL_SCORE_MULTIPLIER * @as(f32, @floatFromInt(game.level)));
+        score += @as(u32, @intFromFloat(roundedScore));
         game.score += score;
 
         // Increase the level
