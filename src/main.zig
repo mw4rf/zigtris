@@ -411,24 +411,69 @@ fn render() !void {
     // Data strings
     const allocator = std.heap.page_allocator;
     const scoreString = try std.fmt.allocPrint(allocator, "{d}", .{game.score});
-    const levelString = try std.fmt.allocPrint(allocator, "Level: {d}", .{game.level});
+    const levelString = try std.fmt.allocPrint(allocator, "Level {d}", .{game.level});
     defer allocator.free(scoreString);
     defer allocator.free(levelString);
 
     // Center: game over
     if (game.over) {
-        rl.DrawText("Game Over!", WINDOW_SIZE.x / 2 - 100, WINDOW_SIZE.y / 2 - 40, 60, rl.RED);
-        rl.DrawText(scoreString.ptr, WINDOW_SIZE.x / 2 - 100, WINDOW_SIZE.y / 2 + 20, 20, rl.DARKGRAY);
-        rl.DrawText("Press [ENTER] to restart", WINDOW_SIZE.x / 2 - 150, WINDOW_SIZE.y - 40, 20, rl.DARKGRAY);
+        rl.DrawText("ZigTris",
+                    @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText("ZigTris", 100))) / 2.0)),
+                    100,
+                    100, rl.RED);
+        rl.DrawText("All your base are belong to us",
+                    @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText("All your base are belong to us", 20))) / 2.0)),
+                    210,
+                    20, rl.DARKGRAY);
+        rl.DrawText("Game Over!",
+                    @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText("Game Over!", 60))) / 2.0)),
+                    WINDOW_SIZE.y / 2 - 40,
+                    60, rl.RED);
+        rl.DrawText("Score",
+                    @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText("Score", 40))) / 2.0 )),
+                    WINDOW_SIZE.y / 2 + 40,
+                    40, rl.DARKGRAY);
+        rl.DrawText(scoreString.ptr,
+                    @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText(scoreString.ptr, 60))) / 2.0)),
+                    WINDOW_SIZE.y / 2 + 100,
+                    60, rl.DARKGRAY);
+        rl.DrawText("Press [ENTER] to restart",
+                    @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText("Press [ENTER] to restart", 20))) / 2.0)),
+                    WINDOW_SIZE.y - 40,
+                    20, rl.DARKGRAY);
         return;
     }
 
     // Center: pause text (level, score, lives)
     if (game.pause) {
-        rl.DrawText(levelString.ptr, WINDOW_SIZE.x / 2 - 100, WINDOW_SIZE.y / 2 - 40, 60, rl.GREEN);
-        rl.DrawText(scoreString.ptr, WINDOW_SIZE.x / 2 - 100, WINDOW_SIZE.y / 2 + 20, 20, rl.DARKGRAY);
-        rl.DrawText("Press [R] to reset", WINDOW_SIZE.x / 2 - 150, WINDOW_SIZE.y - 60, 20, rl.DARKGRAY);
-        rl.DrawText("Press [ENTER] to start", WINDOW_SIZE.x / 2 - 150, WINDOW_SIZE.y - 40, 20, rl.DARKGRAY);
+        rl.DrawText("ZigTris",
+                    @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText("ZigTris", 100))) / 2.0)),
+                    100,
+                    100, rl.RED);
+        rl.DrawText("All your base are belong to us",
+                    @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText("All your base are belong to us", 20))) / 2.0)),
+                    210,
+                    20, rl.DARKGRAY);
+        rl.DrawText(levelString.ptr,
+                    @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText(levelString.ptr, 60))) / 2.0)),
+                    WINDOW_SIZE.y / 2 - 40,
+                    60, rl.GREEN);
+        rl.DrawText("Score",
+                    @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText("Score", 40))) / 2.0 )),
+                    WINDOW_SIZE.y / 2 + 40,
+                    40, rl.DARKGRAY);
+        rl.DrawText(scoreString.ptr,
+                    @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText(scoreString.ptr, 60))) / 2.0)),
+                    WINDOW_SIZE.y / 2 + 100,
+                    60, rl.DARKGRAY);
+        rl.DrawText("Press [R] to reset",
+                    @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText("Press [R] to reset", 20))) / 2.0)),
+                    WINDOW_SIZE.y - 60,
+                    20, rl.DARKGRAY);
+        rl.DrawText("Press [ENTER] to start",
+                    @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText("Press [ENTER] to start", 20))) / 2.0)),
+                    WINDOW_SIZE.y - 40,
+                    20, rl.DARKGRAY);
         return;
     }
 
