@@ -29,7 +29,14 @@ const SCORE_NEXT_LEVEL :u32 = 1000; // Score to reach the next level
 const LEVEL_SPEED_MULTIPLIER = 0.3; // Speed multiplier for each level
 const LEVEL_SCORE_MULTIPLIER = 1.1; // Score multiplier for each level
 
-const FIGURE_COLORS: [12]rl.Color = .{
+//=======================================
+//========= COLORS  =====================
+//=======================================
+
+const NIGHT_MODE = false;
+
+const FIGURE_COLORS: [12]rl.Color =
+    if (NIGHT_MODE) .{
     rl.RED,
     rl.ORANGE,
     rl.GOLD,
@@ -42,7 +49,26 @@ const FIGURE_COLORS: [12]rl.Color = .{
     rl.MAROON,
     rl.PINK,
     rl.BROWN,
+} else .{
+    rl.RED,
+    rl.ORANGE,
+    rl.GOLD,
+    rl.DARKGREEN,
+    rl.BLUE,
+    rl.DARKBLUE,
+    rl.VIOLET,
+    rl.DARKPURPLE,
+    rl.MAGENTA,
+    rl.MAROON,
+    rl.PINK,
+    rl.BROWN,
 };
+
+
+const BACKGROUND_COLOR = if (NIGHT_MODE) rl.BLACK else rl.LIGHTGRAY;
+const GRID_COLOR = if (NIGHT_MODE) rl.DARKGRAY else rl.GRAY;
+const LINE_COLOR = if (NIGHT_MODE) rl.GRAY else rl.DARKGRAY;
+const TEXT_COLOR = if (NIGHT_MODE) rl.GRAY else rl.DARKGRAY;
 
 //=======================================
 //========= UTILS   =====================
@@ -130,7 +156,7 @@ fn start() !void {
                 .y = @floatFromInt(y * TILE_SIZE),
                 .width = TILE_SIZE,
                 .height = TILE_SIZE,
-                .color = rl.DARKGRAY,
+                .color = GRID_COLOR,
                 .state = BlockState.EMPTY,
             };
         }
@@ -419,7 +445,7 @@ fn render() !void {
         rl.DrawText("All your base are belong to us",
                     @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText("All your base are belong to us", 20))) / 2.0)),
                     210,
-                    20, rl.DARKGRAY);
+                    20, TEXT_COLOR);
         rl.DrawText("Game Over!",
                     @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText("Game Over!", 60))) / 2.0)),
                     WINDOW_SIZE.y / 2 - 40,
@@ -427,15 +453,15 @@ fn render() !void {
         rl.DrawText("Score",
                     @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText("Score", 40))) / 2.0 )),
                     WINDOW_SIZE.y / 2 + 40,
-                    40, rl.DARKGRAY);
+                    40, TEXT_COLOR);
         rl.DrawText(scoreString.ptr,
                     @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText(scoreString.ptr, 60))) / 2.0)),
                     WINDOW_SIZE.y / 2 + 100,
-                    60, rl.DARKGRAY);
+                    60, TEXT_COLOR);
         rl.DrawText("Press [ENTER] to restart",
                     @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText("Press [ENTER] to restart", 20))) / 2.0)),
                     WINDOW_SIZE.y - 40,
-                    20, rl.DARKGRAY);
+                    20, TEXT_COLOR);
         return;
     }
 
@@ -448,7 +474,7 @@ fn render() !void {
         rl.DrawText("All your base are belong to us",
                     @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText("All your base are belong to us", 20))) / 2.0)),
                     210,
-                    20, rl.DARKGRAY);
+                    20, TEXT_COLOR);
         rl.DrawText(levelString.ptr,
                     @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText(levelString.ptr, 60))) / 2.0)),
                     WINDOW_SIZE.y / 2 - 40,
@@ -456,19 +482,19 @@ fn render() !void {
         rl.DrawText("Score",
                     @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText("Score", 40))) / 2.0 )),
                     WINDOW_SIZE.y / 2 + 40,
-                    40, rl.DARKGRAY);
+                    40, TEXT_COLOR);
         rl.DrawText(scoreString.ptr,
                     @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText(scoreString.ptr, 60))) / 2.0)),
                     WINDOW_SIZE.y / 2 + 100,
-                    60, rl.DARKGRAY);
+                    60, TEXT_COLOR);
         rl.DrawText("Press [R] to reset",
                     @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText("Press [R] to reset", 20))) / 2.0)),
                     WINDOW_SIZE.y - 60,
-                    20, rl.DARKGRAY);
+                    20, TEXT_COLOR);
         rl.DrawText("Press [ENTER] to start",
                     @as(c_int, @intFromFloat(WINDOW_SIZE.x / 2 - @as(f32, @floatFromInt(rl.MeasureText("Press [ENTER] to start", 20))) / 2.0)),
                     WINDOW_SIZE.y - 40,
-                    20, rl.DARKGRAY);
+                    20, TEXT_COLOR);
         return;
     }
 
@@ -476,15 +502,15 @@ fn render() !void {
     const LM = WINDOW_SIZE.x - 220;
     const RM = WINDOW_SIZE.x - 20;
 
-    rl.DrawText(APP_NAME, LM-10, 10, 60, rl.DARKGRAY);
+    rl.DrawText(APP_NAME, LM-10, 10, 60, TEXT_COLOR);
 
-    rl.DrawText("Score", LM-10, 100, 40, rl.DARKGRAY);
-    rl.DrawText(scoreString.ptr, LM-10, 150, 40, rl.DARKGRAY);
-    rl.DrawText(levelString.ptr, LM-10, 200, 40, rl.DARKGRAY);
+    rl.DrawText("Score", LM-10, 100, 40, TEXT_COLOR);
+    rl.DrawText(scoreString.ptr, LM-10, 150, 40, TEXT_COLOR);
+    rl.DrawText(levelString.ptr, LM-10, 200, 40, TEXT_COLOR);
 
     // Draw next figure
-    rl.DrawText("Next figure", LM-10, WINDOW_SIZE.y - 260, 30, rl.DARKGRAY);
-    rl.DrawRectangleLines(LM-20, RM-10, 200, 200, rl.DARKGRAY);
+    rl.DrawText("Next figure", LM-10, WINDOW_SIZE.y - 260, 30, TEXT_COLOR);
+    rl.DrawRectangleLines(LM-20, RM-10, 200, 200, TEXT_COLOR);
     for (&game.figureNext) |*block| {
         block.x = @floatFromInt(block.coord.x * TILE_SIZE);
         block.y = @floatFromInt(block.coord.y * TILE_SIZE);
@@ -493,7 +519,7 @@ fn render() !void {
         block.y += WINDOW_SIZE.y - 200.0;
         // Draw
         rl.DrawRectangleRec(block.getRect(), block.color);
-        rl.DrawRectangleLinesEx(block.getRect(), 1, rl.RAYWHITE);
+        rl.DrawRectangleLinesEx(block.getRect(), 1, GRID_COLOR);
     }
 
     // Draw grid
@@ -502,11 +528,11 @@ fn render() !void {
             const block = &game.grid[x][y];
             switch (block.state) {
                 .EMPTY => {
-                    rl.DrawRectangleLinesEx(block.getRect(), 1, rl.DARKGRAY);
+                    rl.DrawRectangleLinesEx(block.getRect(), 1, GRID_COLOR);
                 },
                 .GROUND => {
-                    rl.DrawRectangleRec(block.getRect(), rl.GRAY);
-                    rl.DrawRectangleLinesEx(block.getRect(), 1, rl.DARKGRAY);
+                    rl.DrawRectangleRec(block.getRect(), LINE_COLOR);
+                    rl.DrawRectangleLinesEx(block.getRect(), 1, GRID_COLOR);
                 },
                 else => {}, // current figure drawn later
             }
@@ -520,7 +546,7 @@ fn render() !void {
         block.y = @floatFromInt(block.coord.y * TILE_SIZE);
         // Draw
         rl.DrawRectangleRec(block.getRect(), block.color);
-        rl.DrawRectangleLinesEx(block.getRect(), 1, rl.RAYWHITE);
+        rl.DrawRectangleLinesEx(block.getRect(), 1, GRID_COLOR);
     }
 
 
@@ -565,7 +591,7 @@ pub fn main() !void {
                 .y = 0,
                 .width = TILE_SIZE,
                 .height = TILE_SIZE,
-                .color = rl.RED,
+                .color = rl.RAYWHITE, // Color is set later
                 .state = BlockState.FIGURE,
             };
         }
@@ -595,7 +621,7 @@ pub fn main() !void {
         rl.BeginDrawing();
         defer rl.EndDrawing();
 
-        rl.ClearBackground(rl.BLACK);
+        rl.ClearBackground(BACKGROUND_COLOR);
 
         try update();
         try render();
