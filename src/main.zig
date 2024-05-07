@@ -101,15 +101,25 @@ const Game = struct {
 var game: Game = Game{};
 
 // Tetromino figures definition
-const FIGURES_POS: [7][4]rl.Vector2 = .{
-    .{ Vec2(-1, 0), Vec2(-2, 0), Vec2(0, 0), Vec2(1, 0) },
-    .{ Vec2(0, -1), Vec2(-1, -1), Vec2(-1, 0), Vec2(0, 0) },
-    .{ Vec2(-1, 0), Vec2(-1, 1), Vec2(0, 0), Vec2(0, -1) },
-    .{ Vec2(0, 0), Vec2(-1, 0), Vec2(0, 1), Vec2(-1, -1) },
-    .{ Vec2(0, 0), Vec2(0, -1), Vec2(0, 1), Vec2(-1, -1) },
-    .{ Vec2(0, 0), Vec2(0, -1), Vec2(0, 1), Vec2(1, -1) },
-    .{ Vec2(0, 0), Vec2(0, -1), Vec2(0, 1), Vec2(-1, 0) },
+// const FIGURES_POS: [7][4]rl.Vector2 = .{
+//     .{ Vec2(-1, 0), Vec2(-2, 0), Vec2(0, 0), Vec2(1, 0) },      // I (3 blocks line)
+//     .{ Vec2(0, -1), Vec2(-1, -1), Vec2(-1, 0), Vec2(0, 0) },    // S
+//     .{ Vec2(-1, 0), Vec2(-1, 1), Vec2(0, 0), Vec2(0, -1) },     // Z
+//     .{ Vec2(0, 0), Vec2(-1, 0), Vec2(0, 1), Vec2(-1, -1) },     // T
+//     .{ Vec2(0, 0), Vec2(0, -1), Vec2(0, 1), Vec2(-1, -1) },     // L
+//     .{ Vec2(0, 0), Vec2(0, -1), Vec2(0, 1), Vec2(1, -1) },      // L inverted
+//     .{ Vec2(0, 0), Vec2(0, -1), Vec2(0, 1), Vec2(-1, 0) },      // Square
+// };
+const FIGURES_POS: [7][4]Coord = .{
+    .{ Coord{.x = 3, .y = 5}, Coord{.x = 2, .y = 5}, Coord{.x = 4, .y = 5}, Coord{.x = 5, .y = 5} }, // I-Tetromino
+    .{ Coord{.x = 3, .y = 5}, Coord{.x = 2, .y = 4}, Coord{.x = 2, .y = 5}, Coord{.x = 3, .y = 4} }, // S-Tetromino
+    .{ Coord{.x = 2, .y = 5}, Coord{.x = 2, .y = 6}, Coord{.x = 3, .y = 5}, Coord{.x = 3, .y = 4} }, // Z-Tetromino
+    .{ Coord{.x = 3, .y = 5}, Coord{.x = 2, .y = 5}, Coord{.x = 3, .y = 6}, Coord{.x = 2, .y = 4} }, // T-Tetromino
+    .{ Coord{.x = 3, .y = 5}, Coord{.x = 3, .y = 4}, Coord{.x = 3, .y = 6}, Coord{.x = 2, .y = 4} }, // L-Tetromino
+    .{ Coord{.x = 3, .y = 5}, Coord{.x = 3, .y = 4}, Coord{.x = 3, .y = 6}, Coord{.x = 4, .y = 4} }, // J-Tetromino
+    .{ Coord{.x = 3, .y = 5}, Coord{.x = 3, .y = 4}, Coord{.x = 3, .y = 6}, Coord{.x = 2, .y = 5} }, // O-Tetromino
 };
+
 
 /// Start or restart the game
 fn start() !void {
@@ -147,7 +157,8 @@ fn makeFigure() !void {
     // Choose a new next figure
     var prng = std.rand.Xoshiro256.init(@as(u64, @intCast(std.time.milliTimestamp())));
     const random = prng.random();
-    game.figureNext = game.figures.items[random.uintLessThan(usize, game.figures.items.len)];
+    const ri = random.uintLessThan(usize, game.figures.items.len);
+    game.figureNext = game.figures.items[ri];
     // Set the new figure color
     const color = FIGURE_COLORS[random.uintLessThan(usize, FIGURE_COLORS.len)];
     for (&game.figureNext) |*block| {
@@ -535,15 +546,32 @@ pub fn main() !void {
 
     // Initialize figures
     inline for (FIGURES_POS) |posList| {
+        // Center figures
+        var minX: usize = std.math.maxInt(usize);
+        var maxX: usize = 0;
+        var minY: usize = std.math.maxInt(usize);
+        var maxY: usize = 0;
+
+        for (posList) |pos| {
+            if (pos.x < minX) minX = pos.x;
+            if (pos.x > maxX) maxX = pos.x;
+            if (pos.y < minY) minY = pos.y;
+            if (pos.y > maxY) maxY = pos.y;
+        }
+
+        const offsetX = (GRID_SIZE.x - (maxX - minX + 1)) / 2 - minX;
+        const offsetY = 0;
+
+        // Create figure blocks
         var blocks: [4]Block = undefined;
         for (0.., posList) |j, pos| {
             blocks[j] = Block{
                 .coord = Coord{
-                    .x = @intFromFloat(@divTrunc(pos.x + GRID_SIZE.x, 2)),
-                    .y = @intFromFloat(pos.y + 1),
+                    .x = pos.x + offsetX,
+                    .y = pos.y - minY + offsetY,
                 },
-                .x = @divTrunc(pos.x + GRID_SIZE.x, 2) * TILE_SIZE,
-                .y = @as(f32, pos.y + 1) * TILE_SIZE,
+                .x = 0,
+                .y = 0,
                 .width = TILE_SIZE,
                 .height = TILE_SIZE,
                 .color = rl.RED,
@@ -552,6 +580,7 @@ pub fn main() !void {
         }
         try game.figures.append(blocks);
     }
+
 
     // Initialize music
     rl.InitAudioDevice();
