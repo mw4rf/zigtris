@@ -4,7 +4,8 @@ const rl = @cImport({
     @cInclude("raymath.h");
 });
 
-// TODO: save high score
+// TODO: FIX bug some tiles of the grid are plain gray (?) after line removal
+// TODO: FIX the move figure left/right logic should be evaluated before ground collision detection
 
 //=======================================
 //========= CONSTANTS  ==================
@@ -311,12 +312,11 @@ fn saveHighScore() !void {
     const highScore = std.fmt.parseUnsigned(u32, trimmedBuffer, 10) catch 0;
 
     if (game.score > highScore) {
-        var buf :[4]u8 = undefined;
+        var buf :[100]u8 = undefined;
         const score = try std.fmt.bufPrint(&buf, "{d}", .{game.score});
         try file.seekTo(0); // overwrite
         _ = try file.write(score);
     }
-
 }
 
 //=======================================
