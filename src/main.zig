@@ -298,6 +298,27 @@ fn removeLine(index: usize) void {
     }
 }
 
+/// Save the high score to a file
+fn saveHighScore() !void {
+    var file = try std.fs.cwd().createFile("highscore.txt", .{ .read = true, .truncate = false });
+    defer file.close();
+
+    const stat = try file.stat();
+    const buffer = try file.readToEndAlloc(game.allocator, stat.size);
+    defer game.allocator.free(buffer);
+    const trimmedBuffer = std.mem.trimRight(u8, buffer, "\r\n");
+
+    const highScore = std.fmt.parseUnsigned(u32, trimmedBuffer, 10) catch 0;
+
+    if (game.score > highScore) {
+        var buf :[4]u8 = undefined;
+        const score = try std.fmt.bufPrint(&buf, "{d}", .{game.score});
+        try file.seekTo(0); // overwrite
+        _ = try file.write(score);
+    }
+
+}
+
 //=======================================
 //========= GAME LOOP  ==================
 //=======================================
@@ -374,6 +395,7 @@ fn update() !void {
         for (0..GRID_SIZE.x) |x| {
             if (game.grid[x][0].state == BlockState.GROUND) {
                 game.over = true;
+                try saveHighScore();
                 return;
             }
         }
