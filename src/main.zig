@@ -4,7 +4,6 @@ const rl = @cImport({
     @cInclude("raymath.h");
 });
 
-// TODO FIX: sometimes the last empty cells are not free and the figure is stopped before reaching the bottom
 // TODO FIX: weird rotation behavior on the left border for some figures
 // TODO: improve display of score and level on the sidebar
 // TODO: balance difficulty (speed increase should be more linear)
@@ -312,10 +311,17 @@ fn update() !void {
         }
     }
 
-    // A figure has landed
+    // Check if the figure has landed
+    if (!checkBorders(Direction.DOWN)) {
+        for (&game.figure) |*block| {
+            block.state = BlockState.GROUND;
+            game.grid[block.coord.x][block.coord.y] = block.*;
+        }
+        game.figureHadLanded = true;
+    }
+
+    // The figure has landed
     if (game.figureHadLanded) {
-        // Reset the flag
-        game.figureHadLanded = false;
 
         // Remove full lines
         var score: u32 = 0;
@@ -343,11 +349,25 @@ fn update() !void {
             }
         }
 
+        // Reset the flag
+        game.figureHadLanded = false;
+
         // Make a new figure
         try makeFigure();
+
+        // Render before looping again
+        return;
     }
 
-    // Move the figure
+
+    // The figure has not landed: allow movement
+
+    // Rotate the figure
+    if (rl.IsKeyPressed(rl.KEY_UP)) {
+        rotateFigure();
+    }
+
+    // Move the figure left
     if (rl.IsKeyPressed(rl.KEY_LEFT)) {
         if (checkBorders(Direction.LEFT)) {
             for (&game.figure) |*rect| {
@@ -355,6 +375,7 @@ fn update() !void {
             }
         }
     }
+    // Move te figure right
     if (rl.IsKeyPressed(rl.KEY_RIGHT)) {
         if (checkBorders(Direction.RIGHT)) {
             for (&game.figure) |*rect| {
@@ -362,17 +383,13 @@ fn update() !void {
             }
         }
     }
+    // Move the figure down (manually)
     if (rl.IsKeyDown(rl.KEY_DOWN)) {
         if (checkBorders(Direction.DOWN)) {
             for (&game.figure) |*rect| {
                 rect.coord.y += 1;
             }
         }
-    }
-
-    // Rotate the figure
-    if (rl.IsKeyPressed(rl.KEY_UP)) {
-        rotateFigure();
     }
 
     // Move the figure down (gravity)
@@ -383,17 +400,8 @@ fn update() !void {
             for (&game.figure) |*rect| {
                 rect.coord.y += 1;
             }
-        } else {
-            // The figure has reached the bottom
-            for (&game.figure) |*block| {
-                block.state = BlockState.GROUND;
-                game.grid[block.coord.x][block.coord.y] = block.*;
-            }
-            game.figureHadLanded = true;
-            return; // loop again and call render() before making a new figure
         }
     }
-
 }
 
 fn render() !void {
