@@ -229,10 +229,9 @@ fn checkBorders(dir: Direction) bool {
             if (rect.coord.y >= GRID_SIZE.y - 1) {
                 return false;
             }
-            // The figure is blocked by another block (the ground)
-            switch (game.grid[rect.coord.x][rect.coord.y + 1].state) {
-                .GROUND => return false,
-                else => {},
+            // The figure is blocked by another block
+            if (game.grid[rect.coord.x][rect.coord.y + 1].state == BlockState.GROUND) {
+                return false;
             }
         }
     }
