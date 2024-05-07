@@ -4,9 +4,6 @@ const rl = @cImport({
     @cInclude("raymath.h");
 });
 
-// TODO FIX: weird rotation behavior on the left border for some figures (S -> square)
-// TODO: improve display of score and level on the sidebar
-// TODO: balance difficulty (speed increase should be more linear)
 // TODO: save high score
 
 //=======================================
@@ -29,39 +26,48 @@ const SCORE_NEXT_LEVEL :u32 = 1000; // Score to reach the next level
 const LEVEL_SPEED_MULTIPLIER = 0.3; // Speed multiplier for each level
 const LEVEL_SCORE_MULTIPLIER = 1.1; // Score multiplier for each level
 
+const NEUTRAL_LINE_COLOR = false; // Use a neutral color for the lines instead of the figure color
+const NIGHT_MODE = true;
+
 //=======================================
 //========= COLORS  =====================
 //=======================================
 
-const NIGHT_MODE = false;
+const MOCHA_ROSEWATER = .{ .r = 245, .g = 224, .b = 220, .a = 255 };
+const MOCHA_FLAMINGO = .{ .r = 242, .g = 205, .b = 205, .a = 255 };
+const MOCHA_PINK = .{ .r = 245, .g = 194, .b = 231, .a = 255 };
+const MOCHA_MAUVE = .{ .r = 203, .g = 166, .b = 247, .a = 255 };
+const MOCHA_RED = .{ .r = 243, .g = 139, .b = 168, .a = 255 };
+const MOCHA_MAROON = .{ .r = 235, .g = 160, .b = 172, .a = 255 };
+const MOCHA_PEACH = .{ .r = 250, .g = 179, .b = 135, .a = 255 };
+const MOCHA_YELLOW = .{ .r = 249, .g = 226, .b = 175, .a = 255 };
+const MOCHA_GREEN = .{ .r = 166, .g = 227, .b = 161, .a = 255 };
+const MOCHA_TEAL = .{ .r = 148, .g = 226, .b = 213, .a = 255 };
+const MOCHA_SKY = .{ .r = 137, .g = 220, .b = 235, .a = 255 };
+const MOCHA_SAPPHIRE = .{ .r = 116, .g = 199, .b = 236, .a = 255 };
+const MOCHA_BLUE = .{ .r = 137, .g = 180, .b = 250, .a = 255 };
+const MOCHA_LAVENDER = .{ .r = 180, .g = 190, .b = 254, .a = 255 };
 
-const FIGURE_COLORS: [12]rl.Color =
+const LATTE_ROSEWATER = .{ .r = 220, .g = 138, .b = 120, .a = 255 };
+const LATTE_FLAMINGO = .{ .r = 221, .g = 120, .b = 120, .a = 255 };
+const LATTE_PINK = .{ .r = 234, .g = 118, .b = 203, .a = 255 };
+const LATTE_MAUVE = .{ .r = 136, .g = 57, .b = 239, .a = 255 };
+const LATTE_RED = .{ .r = 210, .g = 15, .b = 57, .a = 255 };
+const LATTE_MAROON = .{ .r = 230, .g = 69, .b = 83, .a = 255 };
+const LATTE_PEACH = .{ .r = 254, .g = 100, .b = 11, .a = 255 };
+const LATTE_YELLOW = .{ .r = 223, .g = 142, .b = 29, .a = 255 };
+const LATTE_GREEN = .{ .r = 64, .g = 160, .b = 43, .a = 255 };
+const LATTE_TEAL = .{ .r = 23, .g = 146, .b = 153, .a = 255 };
+const LATTE_SKY = .{ .r = 4, .g = 165, .b = 229, .a = 255 };
+const LATTE_SAPPHIRE = .{ .r = 32, .g = 159, .b = 181, .a = 255 };
+const LATTE_BLUE = .{ .r = 30, .g = 102, .b = 245, .a = 255 };
+const LATTE_LAVENDER = .{ .r = 114, .g = 135, .b = 253, .a = 255 };
+
+const FIGURE_COLORS: [14]rl.Color =
     if (NIGHT_MODE) .{
-    rl.RED,
-    rl.ORANGE,
-    rl.GOLD,
-    rl.LIME,
-    rl.BLUE,
-    rl.SKYBLUE,
-    rl.VIOLET,
-    rl.PURPLE,
-    rl.MAGENTA,
-    rl.MAROON,
-    rl.PINK,
-    rl.BROWN,
-} else .{
-    rl.RED,
-    rl.ORANGE,
-    rl.GOLD,
-    rl.DARKGREEN,
-    rl.BLUE,
-    rl.DARKBLUE,
-    rl.VIOLET,
-    rl.DARKPURPLE,
-    rl.MAGENTA,
-    rl.MAROON,
-    rl.PINK,
-    rl.BROWN,
+        MOCHA_ROSEWATER, MOCHA_FLAMINGO, MOCHA_PINK, MOCHA_MAUVE, MOCHA_RED, MOCHA_MAROON, MOCHA_PEACH, MOCHA_YELLOW, MOCHA_GREEN, MOCHA_TEAL, MOCHA_SKY, MOCHA_SAPPHIRE, MOCHA_BLUE, MOCHA_LAVENDER
+    } else .{
+        LATTE_ROSEWATER, LATTE_FLAMINGO, LATTE_PINK, LATTE_MAUVE, LATTE_RED, LATTE_MAROON, LATTE_PEACH, LATTE_YELLOW, LATTE_GREEN, LATTE_TEAL, LATTE_SKY, LATTE_SAPPHIRE, LATTE_BLUE, LATTE_LAVENDER
 };
 
 
@@ -531,7 +537,11 @@ fn render() !void {
                     rl.DrawRectangleLinesEx(block.getRect(), 1, GRID_COLOR);
                 },
                 .GROUND => {
-                    rl.DrawRectangleRec(block.getRect(), LINE_COLOR);
+                    if(NEUTRAL_LINE_COLOR) {
+                        rl.DrawRectangleRec(block.getRect(), LINE_COLOR);
+                    } else {
+                        rl.DrawRectangleRec(block.getRect(), block.color);
+                    }
                     rl.DrawRectangleLinesEx(block.getRect(), 1, GRID_COLOR);
                 },
                 else => {}, // current figure drawn later
