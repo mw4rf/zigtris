@@ -12,4 +12,4 @@ Then: `zig build run`
 
 Tested on Linux with Zig 0.13.
 
-<img src="https://github.com/user-attachments/assets/a24b4363-4454-49f5-834b-3a2c1573975b" width="200" alt="Screenshot"/>
+<img src="https://github.com/user-attachments/assets/a24b4363-4454-49f5-834b-3a2c1573975b" width="300" alt="Screenshot"/>
