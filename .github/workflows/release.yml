@@ -53,15 +53,13 @@ jobs:
             curl -LO https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz
             tar -xvf zig-linux-x86_64-0.13.0.tar.xz
             sudo mv zig-linux-x86_64-0.13.0 /usr/local/zig
-            echo "/usr/local/zig" | sudo tee -a /etc/environment
-            echo "/usr/local/zig" | sudo tee -a $GITHUB_ENV
+            echo "ZIG_PATH=/usr/local/zig" >> $GITHUB_ENV
             ;;
           macos-latest)
             curl -LO https://ziglang.org/download/0.13.0/zig-macos-x86_64-0.13.0.tar.xz
             tar -xvf zig-macos-x86_64-0.13.0.tar.xz
             sudo mv zig-macos-x86_64-0.13.0 /usr/local/zig
-            echo "/usr/local/zig" | sudo tee -a /etc/environment
-            echo "/usr/local/zig" | sudo tee -a $GITHUB_ENV
+            echo "ZIG_PATH=/usr/local/zig" >> $GITHUB_ENV
             ;;
         esac
       shell: bash
@@ -71,12 +69,13 @@ jobs:
       run: |
         curl -LO https://ziglang.org/download/0.13.0/zig-windows-x86_64-0.13.0.zip
         Expand-Archive -Path zig-windows-x86_64-0.13.0.zip -DestinationPath zig
-        echo "$(pwd)/zig/zig-windows-x86_64-0.13.0" >> $env:GITHUB_PATH
+        echo "ZIG_PATH=$(pwd)/zig/zig-windows-x86_64-0.13.0" >> $env:GITHUB_ENV
       shell: powershell
 
     - name: Add Zig to PATH (Ubuntu and macOS)
       if: matrix.os != 'windows-latest'
-      run: echo "/usr/local/zig" | sudo tee -a $GITHUB_PATH
+      run: |
+        echo "$ZIG_PATH" | sudo tee -a $GITHUB_PATH
 
     - name: Build for ${{ matrix.os }}
       run: |
