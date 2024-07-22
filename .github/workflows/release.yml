@@ -31,16 +31,20 @@ jobs:
             tar -xvf raylib-5.0_linux_amd64.tar.gz
             mv raylib-5.0_linux_amd64 raylib
             ;;
-          windows-latest)
-            curl -LO https://github.com/raysan5/raylib/releases/download/5.0/raylib-5.0_win64_mingw-w64.zip
-            unzip raylib-5.0_win64_mingw-w64.zip -d raylib
-            ;;
           macos-latest)
             curl -LO https://github.com/raysan5/raylib/releases/download/5.0/raylib-5.0_macos.tar.gz
             tar -xvf raylib-5.0_macos.tar.gz
             mv raylib-5.0_macos raylib
             ;;
         esac
+      shell: bash
+
+    - name: Set up dependencies (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        curl -LO https://github.com/raysan5/raylib/releases/download/5.0/raylib-5.0_win64_mingw-w64.zip
+        Expand-Archive -Path raylib-5.0_win64_mingw-w64.zip -DestinationPath raylib
+      shell: powershell
 
     - name: Install Zig
       run: |
@@ -50,19 +54,29 @@ jobs:
             tar -xvf zig-linux-x86_64-0.13.0.tar.xz
             sudo mv zig-linux-x86_64-0.13.0 /usr/local/zig
             echo "/usr/local/zig" | sudo tee -a /etc/environment
-            ;;
-          windows-latest)
-            curl -LO https://ziglang.org/download/0.13.0/zig-windows-x86_64-0.13.0.zip
-            unzip zig-windows-x86_64-0.13.0.zip -d zig
-            echo "zig/zig-windows-x86_64-0.13.0" >> $GITHUB_PATH
+            echo "/usr/local/zig" | sudo tee -a $GITHUB_ENV
             ;;
           macos-latest)
             curl -LO https://ziglang.org/download/0.13.0/zig-macos-x86_64-0.13.0.tar.xz
             tar -xvf zig-macos-x86_64-0.13.0.tar.xz
             sudo mv zig-macos-x86_64-0.13.0 /usr/local/zig
             echo "/usr/local/zig" | sudo tee -a /etc/environment
+            echo "/usr/local/zig" | sudo tee -a $GITHUB_ENV
             ;;
         esac
+      shell: bash
+
+    - name: Install Zig (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        curl -LO https://ziglang.org/download/0.13.0/zig-windows-x86_64-0.13.0.zip
+        Expand-Archive -Path zig-windows-x86_64-0.13.0.zip -DestinationPath zig
+        echo "$(pwd)/zig/zig-windows-x86_64-0.13.0" >> $env:GITHUB_PATH
+      shell: powershell
+
+    - name: Add Zig to PATH (Ubuntu and macOS)
+      if: matrix.os != 'windows-latest'
+      run: echo "/usr/local/zig" | sudo tee -a $GITHUB_PATH
 
     - name: Build for ${{ matrix.os }}
       run: |
