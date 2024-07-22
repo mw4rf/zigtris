@@ -13,8 +13,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -30,7 +29,7 @@ jobs:
             sudo apt-get install -y build-essential
             curl -LO https://github.com/raysan5/raylib/releases/download/5.0/raylib-5.0_linux_amd64.tar.gz
             tar -xvf raylib-5.0_linux_amd64.tar.gz
-            mv raylib-5.0 raylib
+            mv raylib-5.0_linux_amd64 raylib
             ;;
           windows-latest)
             curl -LO https://github.com/raysan5/raylib/releases/download/5.0/raylib-5.0_win64_mingw-w64.zip
@@ -39,7 +38,7 @@ jobs:
           macos-latest)
             curl -LO https://github.com/raysan5/raylib/releases/download/5.0/raylib-5.0_macos.tar.gz
             tar -xvf raylib-5.0_macos.tar.gz
-            mv raylib-5.0 raylib
+            mv raylib-5.0_macos raylib
             ;;
         esac
 
@@ -50,18 +49,18 @@ jobs:
             curl -LO https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz
             tar -xvf zig-linux-x86_64-0.13.0.tar.xz
             sudo mv zig-linux-x86_64-0.13.0 /usr/local/zig
-            sudo ln -s /usr/local/zig/zig /usr/local/bin/zig
+            echo "/usr/local/zig" | sudo tee -a /etc/environment
             ;;
           windows-latest)
             curl -LO https://ziglang.org/download/0.13.0/zig-windows-x86_64-0.13.0.zip
             unzip zig-windows-x86_64-0.13.0.zip -d zig
-            echo "::add-path::$(pwd)/zig/zig-windows-x86_64-0.13.0"
+            echo "zig/zig-windows-x86_64-0.13.0" >> $GITHUB_PATH
             ;;
           macos-latest)
             curl -LO https://ziglang.org/download/0.13.0/zig-macos-x86_64-0.13.0.tar.xz
             tar -xvf zig-macos-x86_64-0.13.0.tar.xz
             sudo mv zig-macos-x86_64-0.13.0 /usr/local/zig
-            sudo ln -s /usr/local/zig/zig /usr/local/bin/zig
+            echo "/usr/local/zig" | sudo tee -a /etc/environment
             ;;
         esac
 
