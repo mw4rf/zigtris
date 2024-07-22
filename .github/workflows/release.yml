@@ -1,0 +1,105 @@
+name: Zig
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'  # Matches tags like v0.1, v1.0, etc.
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:  # Enables manual trigger
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up dependencies
+      run: |
+        case ${{ matrix.os }} in
+          ubuntu-latest)
+            sudo apt-get update
+            sudo apt-get install -y build-essential
+            curl -LO https://github.com/raysan5/raylib/releases/download/5.0.0/raylib-5.0.0_Linux.tar.gz
+            tar -xvf raylib-5.0.0_Linux.tar.gz
+            mv raylib-5.0.0 raylib
+            ;;
+          windows-latest)
+            curl -LO https://github.com/raysan5/raylib/releases/download/5.0.0/raylib-5.0.0_Win64_mingw.zip
+            unzip raylib-5.0.0_Win64_mingw.zip -d raylib
+            ;;
+          macos-latest)
+            curl -LO https://github.com/raysan5/raylib/releases/download/5.0.0/raylib-5.0.0_macos.tar.gz
+            tar -xvf raylib-5.0.0_macos.tar.gz
+            mv raylib-5.0.0 raylib
+            ;;
+        esac
+
+    - name: Install Zig
+      run: |
+        case ${{ matrix.os }} in
+          ubuntu-latest)
+            curl -LO https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz
+            tar -xvf zig-linux-x86_64-0.13.0.tar.xz
+            sudo mv zig-linux-x86_64-0.13.0 /usr/local/zig
+            sudo ln -s /usr/local/zig/zig /usr/local/bin/zig
+            ;;
+          windows-latest)
+            curl -LO https://ziglang.org/download/0.13.0/zig-windows-x86_64-0.13.0.zip
+            unzip zig-windows-x86_64-0.13.0.zip -d zig
+            echo "::add-path::$(pwd)/zig/zig-windows-x86_64-0.13.0"
+            ;;
+          macos-latest)
+            curl -LO https://ziglang.org/download/0.13.0/zig-macos-x86_64-0.13.0.tar.xz
+            tar -xvf zig-macos-x86_64-0.13.0.tar.xz
+            sudo mv zig-macos-x86_64-0.13.0 /usr/local/zig
+            sudo ln -s /usr/local/zig/zig /usr/local/bin/zig
+            ;;
+        esac
+
+    - name: Build for ${{ matrix.os }}
+      run: |
+        zig build -Dtarget=${{ matrix.os == 'windows-latest' && 'x86_64-windows-gnu' || matrix.os == 'macos-latest' && 'x86_64-macos' || 'x86_64-linux-gnu' }} -Drelease-safe
+
+    - name: Determine Tag
+      id: determine_tag
+      run: |
+        if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+        else
+          TAG_NAME=manual-$(date +'%Y%m%d%H%M%S')
+        fi
+        echo "TAG_NAME=${TAG_NAME}" >> $GITHUB_ENV
+
+    - name: Create Release
+      if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+      with:
+        tag_name: ${{ env.TAG_NAME }}
+        release_name: Release ${{ env.TAG_NAME }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Executable
+      if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: |
+          ${{ matrix.os == 'ubuntu-latest' && './zig-out/bin/zigtris' || matrix.os == 'windows-latest' && './zig-out/bin/zigtris.exe' || './zig-out/bin/zigtris' }}
+        asset_name: |
+          ${{ matrix.os == 'ubuntu-latest' && 'zigtris-linux' || matrix.os == 'windows-latest' && 'zigtris-windows.exe' || 'zigtris-macos' }}
+        asset_content_type: application/octet-stream
