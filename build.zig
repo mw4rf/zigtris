@@ -6,7 +6,7 @@ pub fn build(b: *std.Build) void {
 
     const exe = b.addExecutable(.{
         .name = "zigtris",
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -14,8 +14,8 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(exe);
 
     // Raylib
-    exe.addIncludePath(.{ .path = "./raylib/include" });
-    exe.addLibraryPath(.{ .path = "./raylib/lib" });
+    exe.addIncludePath(b.path("./raylib/include" ));
+    exe.addLibraryPath(b.path("./raylib/lib" ));
     exe.linkSystemLibrary("raylib");
 
     // C libraries
@@ -33,7 +33,7 @@ pub fn build(b: *std.Build) void {
 
     // Unit tests
     const exe_unit_tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
