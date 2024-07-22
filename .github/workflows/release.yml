@@ -79,7 +79,7 @@ jobs:
 
     - name: Build for ${{ matrix.os }}
       run: |
-        zig build -Dtarget=${{ matrix.os == 'windows-latest' && 'x86_64-windows-gnu' || matrix.os == 'macos-latest' && 'x86_64-macos' || 'x86_64-linux-gnu' }} -Drelease-safe
+        zig build -Dtarget=${{ matrix.os == 'windows-latest' && 'x86_64-windows-gnu' || matrix.os == 'macos-latest' && 'x86_64-macos' || 'x86_64-linux-gnu' }} -Doptimize=ReleaseSafe
 
     - name: Determine Tag
       id: determine_tag
