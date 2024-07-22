@@ -28,18 +28,18 @@ jobs:
           ubuntu-latest)
             sudo apt-get update
             sudo apt-get install -y build-essential
-            curl -LO https://github.com/raysan5/raylib/releases/download/5.0.0/raylib-5.0.0_Linux.tar.gz
-            tar -xvf raylib-5.0.0_Linux.tar.gz
-            mv raylib-5.0.0 raylib
+            curl -LO https://github.com/raysan5/raylib/releases/download/5.0/raylib-5.0_linux_amd64.tar.gz
+            tar -xvf raylib-5.0_linux_amd64.tar.gz
+            mv raylib-5.0 raylib
             ;;
           windows-latest)
-            curl -LO https://github.com/raysan5/raylib/releases/download/5.0.0/raylib-5.0.0_Win64_mingw.zip
-            unzip raylib-5.0.0_Win64_mingw.zip -d raylib
+            curl -LO https://github.com/raysan5/raylib/releases/download/5.0/raylib-5.0_win64_mingw-w64.zip
+            unzip raylib-5.0_win64_mingw-w64.zip -d raylib
             ;;
           macos-latest)
-            curl -LO https://github.com/raysan5/raylib/releases/download/5.0.0/raylib-5.0.0_macos.tar.gz
-            tar -xvf raylib-5.0.0_macos.tar.gz
-            mv raylib-5.0.0 raylib
+            curl -LO https://github.com/raysan5/raylib/releases/download/5.0/raylib-5.0_macos.tar.gz
+            tar -xvf raylib-5.0_macos.tar.gz
+            mv raylib-5.0 raylib
             ;;
         esac
 
@@ -92,14 +92,3 @@ jobs:
         prerelease: false
 
     - name: Upload Executable
-      if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: |
-          ${{ matrix.os == 'ubuntu-latest' && './zig-out/bin/zigtris' || matrix.os == 'windows-latest' && './zig-out/bin/zigtris.exe' || './zig-out/bin/zigtris' }}
-        asset_name: |
-          ${{ matrix.os == 'ubuntu-latest' && 'zigtris-linux' || matrix.os == 'windows-latest' && 'zigtris-windows.exe' || 'zigtris-macos' }}
-        asset_content_type: application/octet-stream
