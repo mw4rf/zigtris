@@ -79,6 +79,7 @@ jobs:
     - name: Verify Zig Installation
       run: |
         echo "Zig path: $ZIG_PATH"
+        ls -l $ZIG_PATH/bin
         $ZIG_PATH/bin/zig version
 
     - name: Build for ${{ matrix.os }}
