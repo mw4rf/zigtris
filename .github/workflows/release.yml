@@ -85,3 +85,4 @@ jobs:
         echo "Building with Zig at path: $ZIG_PATH"
         $ZIG_PATH/zig build -Dtarget=${{ matrix.os == 'windows-latest' && 'x86_64-windows-gnu' || matrix.os == 'macos-latest' && 'x86_64-macos' || 'x86_64-linux-gnu' }} -Doptimize=ReleaseSafe
         echo "Build completed"
+      timeout-minutes: 60
